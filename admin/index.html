@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnimeViewer — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .tabs{display:flex; gap:8px; margin-bottom:16px}
+    .tab{padding:10px 14px; border-radius:12px; border:1px solid rgba(154,107,255,.45); background:#0f0d19; color:var(--ink); cursor:pointer; box-shadow:0 0 20px rgba(154,107,255,.15), inset 0 0 10px rgba(154,107,255,.08)}
+    .tab.active{border-color:rgba(154,107,255,.8); box-shadow:0 0 14px rgba(154,107,255,.35)}
+    .area{display:none}
+    .area.show{display:block}
+    .toolbar{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:12px}
+    .table{width:100%; border-collapse:collapse; border:1px solid rgba(154,107,255,.22); border-radius:12px; overflow:hidden}
+    .table th,.table td{padding:10px 12px; border-bottom:1px solid rgba(154,107,255,.18); text-align:left; font-size:14px}
+    .table tr:hover{background:rgba(179,140,255,.06)}
+    .badge-sm{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid rgba(154,107,255,.35); background:#0f0d19}
+    .badge-ok{border-color:rgba(64,199,129,.55); color:#eafff5}
+    .pane{margin-top:16px; padding:16px; border:1px solid rgba(179,140,255,.22); border-radius:14px; background:linear-gradient(180deg, rgba(179,140,255,.06), rgba(179,140,255,.02))}
+    .split{display:grid; grid-template-columns: 1.1fr .9fr; gap:16px}
+    @media (max-width: 860px){ .split{grid-template-columns:1fr} }
+    .hstack{display:flex; gap:8px; align-items:center}
+    .stack{display:flex; flex-direction:column; gap:10px}
+    .btn.small{padding:8px 12px; border-radius:10px; font-size:14px}
+    .muted{opacity:.8}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px}
+    .grid-min{display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px}
+    .list{display:flex; flex-direction:column; gap:8px}
+    .item{display:flex; gap:8px; align-items:center}
+    .item input{flex:1}
+    .pill{padding:6px 10px; border-radius:999px; border:1px dashed rgba(154,107,255,.35)}
+    .danger{border-color: rgba(255,95,178,.6) !important; color:#ffd6ec}
+    .pager{gap:12px; display:flex; align-items:center; justify-content:space-between; margin-top:12px}
+  </style>
+  <script type="module" src="/scripts/auth.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><span class="beta">β</span> AnimeViewer</div>
+
+    <main class="frame">
+      <div class="toolbar">
+        <h1 class="title" style="margin:0">Админ-панель</h1>
+        <a class="btn" href="/index.html">На сайт</a>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="users">Пользователи</button>
+        <button class="tab" data-tab="anime">Аниме</button>
+      </div>
+
+      <!-- USERS AREA -->
+      <section id="area-users" class="area show">
+        <div class="toolbar">
+          <form id="usersSearch" class="search" autocomplete="off" style="flex:1; display:flex; gap:12px">
+            <div class="field" style="flex:1">
+              <label class="label" for="uq">Поиск пользователей</label>
+              <input class="input" id="uq" name="q" placeholder="username, email, gid" />
+              <span class="underline"></span>
+            </div>
+            <button class="btn primary find" type="submit">Найти</button>
+          </form>
+          <div class="page-size" id="usersPageSize">
+            <button type="button" data-size="20" class="chip">20</button>
+            <button type="button" data-size="40" class="chip">40</button>
+            <button type="button" data-size="80" class="chip">80</button>
+          </div>
+        </div>
+
+        <div id="usersTableWrap" class="pane">
+          <table class="table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Юзернейм</th>
+                <th>Почта</th>
+                <th>Флаги</th>
+                <th>Создан</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+
+          <div class="pager">
+            <div class="page-controls">
+              <button class="page-btn" id="usersPrev"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 18l-6-6 6-6"/><path d="M9 12h12"/></svg></button>
+              <div class="page-ind" id="usersInd">Стр. 1 из 1</div>
+              <button class="page-btn" id="usersNext"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6"/><path d="M15 12H3"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- user details -->
+        <div id="userDetails" class="pane" style="display:none">
+          <div class="hstack" style="justify-content:space-between">
+            <h3 style="margin:0">Пользователь <span class="mono" id="udGid"></span></h3>
+            <button class="btn" id="udClose">Закрыть</button>
+          </div>
+
+          <div class="tabs" style="margin-top:12px">
+            <button class="tab active" data-udtab="data">Данные</button>
+            <button class="tab" data-udtab="history">История просмотра</button>
+          </div>
+
+          <div id="udTabData" class="area show">
+            <div class="split">
+              <div class="stack">
+                <div class="field" id="f-ud-username">
+                  <label class="label">Юзернейм</label>
+                  <input class="input" id="udUsername" placeholder="username"/>
+                  <span class="underline"></span>
+                </div>
+                <div class="field" id="f-ud-email">
+                  <label class="label">Почта</label>
+                  <input class="input" id="udEmail" type="email" placeholder="name@example.com"/>
+                  <span class="underline"></span>
+                </div>
+                <div class="grid-min">
+                  <label class="pill"><input type="checkbox" id="udEmailVerified"> Email подтверждён</label>
+                  <label class="pill"><input type="checkbox" id="udIsAdmin"> Администратор</label>
+                </div>
+                <div class="hstack">
+                  <button class="btn primary" id="udSave">Сохранить</button>
+                </div>
+              </div>
+              <div class="stack">
+                <div class="muted">Создан: <span id="udCreated" class="mono"></span></div>
+                <div class="muted">Обновлён: <span id="udUpdated" class="mono"></span></div>
+              </div>
+              <div id="udPassRow" class="row">
+                <div class="field" id="f-ud-pass">
+                  <label class="label" for="udNewPass">Новый пароль</label>
+                  <input class="input" id="udNewPass" type="password" placeholder="••••••••" />
+                  <span class="underline"></span>
+                </div>
+                <button class="btn small" id="udSetPass" type="button">Сменить пароль</button>
+                </div>
+                <div class="helper" id="udPassHint">
+                  Пароль должен быть ≥ 8 символов и содержать цифру, строчную и заглавную буквы.
+                </div>
+              </div>
+          </div>
+
+          <div id="udTabHistory" class="area">
+            <div class="toolbar" style="margin-top:0">
+              <div class="page-size" id="uhPageSize">
+                <button type="button" data-size="25" class="chip">25</button>
+                <button type="button" data-size="50" class="chip">50</button>
+              </div>
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Аниме GID</th>
+                  <th>Серия</th>
+                  <th>Таймкод</th>
+                  <th>Просмотрено</th>
+                  <th>Обновлено</th>
+                </tr>
+              </thead>
+              <tbody id="uhTbody"></tbody>
+            </table>
+            <div class="pager">
+              <div class="page-controls">
+                <button class="page-btn" id="uhPrev"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 18l-6-6 6-6"/><path d="M9 12h12"/></svg></button>
+                <div class="page-ind" id="uhInd">Стр. 1 из 1</div>
+                <button class="page-btn" id="uhNext"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6"/><path d="M15 12H3"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANIME AREA -->
+      <section id="area-anime" class="area">
+        <div class="toolbar">
+          <form id="animeSearch" class="search" autocomplete="off" style="flex:1; display:flex; gap:12px">
+            <div class="field" style="flex:1">
+              <label class="label" for="aq">Поиск аниме</label>
+              <input class="input" id="aq" name="q" placeholder="название, url, gid" />
+              <span class="underline"></span>
+            </div>
+            <button class="btn primary find" type="submit">Найти</button>
+          </form>
+          <div class="hstack">
+            <div class="page-size" id="animePageSize" style="margin-right:8px">
+              <button type="button" data-size="13" class="chip">13</button>
+              <button type="button" data-size="26" class="chip">26</button>
+              <button type="button" data-size="39" class="chip">39</button>
+            </div>
+            <button class="btn" id="animeCreate">Добавить аниме</button>
+          </div>
+        </div>
+
+        <div id="animeGrid" class="grid"></div>
+
+        <div class="pager">
+          <div class="page-controls">
+            <button class="page-btn" id="animePrev"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 18l-6-6 6-6"/><path d="M9 12h12"/></svg></button>
+            <div class="page-ind" id="animeInd">Стр. 1 из 1</div>
+            <button class="page-btn" id="animeNext"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6"/><path d="M15 12H3"/></svg></button>
+          </div>
+        </div>
+
+        <!-- anime details -->
+        <div id="animeDetails" class="pane" style="display:none; margin-top:16px">
+          <div class="hstack" style="justify-content:space-between">
+            <h3 style="margin:0">Аниме <span class="mono" id="adGid"></span></h3>
+            <button class="btn" id="adClose">Закрыть</button>
+          </div>
+
+          <div class="split" style="margin-top:12px">
+            <div class="stack">
+              <div class="field" id="f-ad-preview">
+                <label class="label">Постер (URL)</label>
+                <input class="input" id="adPreview" placeholder="https://...jpg"/>
+                <span class="underline"></span>
+              </div>
+              <div class="field" id="f-ad-videopath">
+                <label class="label">Путь к видео</label>
+                <input class="input" id="adVideoPath" placeholder="/gate/"/>
+                <span class="underline"></span>
+              </div>
+              <div class="field" id="f-ad-videosize">
+                <label class="label">Качества (через запятую)</label>
+                <input class="input" id="adVideoSize" placeholder="360p,480p,720p,1080p"/>
+                <span class="underline"></span>
+              </div>
+              <div class="field" id="f-ad-series">
+                <label class="label">Кол-во серий</label>
+                <input class="input" id="adSeries" type="number" min="1" step="1" placeholder="12"/>
+                <span class="underline"></span>
+              </div>
+              <div class="field" id="f-ad-desc">
+                <label class="label">Описание</label>
+                <textarea class="input" id="adDesc" rows="4" placeholder="Краткое описание..."></textarea>
+                <span class="underline"></span>
+              </div>
+              <div class="hstack">
+                <button class="btn primary" id="adSave">Сохранить</button>
+              </div>
+              <div class="muted">Создан: <span id="adCreated" class="mono"></span></div>
+              <div class="muted">Обновлён: <span id="adUpdated" class="mono"></span></div>
+            </div>
+
+            <div class="stack">
+              <h4 style="margin:.2rem 0">Названия</h4>
+              <div id="adNames" class="list"></div>
+              <button class="btn small" id="adAddName">+ название</button>
+
+              <h4 style="margin:.8rem 0 .2rem">Ссылки</h4>
+              <div id="adLinks" class="list"></div>
+              <button class="btn small" id="adAddLink">+ ссылка</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <script type="module" src="/admin/scripts/admin.js"></script>
+</body>
+</html>

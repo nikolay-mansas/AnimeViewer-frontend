@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnimeViewer — Профиль</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .toolbar-profile{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .title{margin:0}
+    .section{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+    .inline{display:flex;gap:10px;align-items:stretch}
+    .inline .field{flex:1}
+    .actions{display:flex;gap:8px;align-items:center}
+    .status-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid rgba(154,107,255,.35);background:#0f0d19}
+    .status-badge.success{border-color:rgba(64,199,129,.55);box-shadow:0 0 12px rgba(64,199,129,.25);color:#eafff5}
+    .btn.small{padding:8px 12px;border-radius:10px;font-size:14px}
+    .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:720px){.two-cols{grid-template-columns:1fr}}
+  </style>
+  <style>
+    .inline.three{display:flex;gap:10px;align-items:stretch}
+    .inline.three .field{flex:1}
+    @media (max-width:720px){.inline.three{flex-direction:column}}
+
+    /* Ховер «заблокировано» у полей (для полей с классом .locked) */
+    .field.locked{position:relative}
+    .field.locked:hover{
+        cursor:not-allowed;
+        border-style:dashed;
+        border-color: rgba(154,107,255,.45);
+        background: linear-gradient(180deg, rgba(154,107,255,.06), rgba(154,107,255,.02));
+    }
+    .field.locked::after{
+        content:'🔒';
+        position:absolute; right:10px; top:10px;
+        font-size:14px; opacity:.0; transition:.2s ease;
+        filter: drop-shadow(0 0 6px rgba(154,107,255,.35));
+        pointer-events:none;
+    }
+    .field.locked:hover::after{opacity:.9}
+</style>
+  <script type="module" src="/scripts/auth.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><span class="beta">β</span> AnimeViewer</div>
+    <main class="frame">
+      <div class="toolbar-profile">
+        <h1 class="title">Профиль</h1>
+        <a class="btn" href="/index.html">Назад</a>
+      </div>
+
+      <div class="section">
+        <div class="inline">
+          <div class="field" id="f-username">
+            <label class="label" for="username">Юзернейм</label>
+            <input class="input" id="username" name="username" placeholder="Ваш юзернейм" disabled />
+            <span class="underline"></span>
+          </div>
+          <div class="actions">
+            <button class="btn small" id="btnUserEdit">Сменить юзернейм</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="inline">
+            <div class="field" id="f-email">
+            <label class="label" for="email">Почта</label>
+            <input
+                class="input"
+                id="email"
+                name="email"
+                type="email"
+                placeholder="name@example.com"
+                autocomplete="email"
+                pattern="^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,}|[0-9]{1,3})(\]?)$"
+                disabled
+            />
+            <span class="underline"></span>
+            </div>
+
+            <div class="actions">
+            <button class="btn small" id="btnEmailEdit">Сменить почту</button>
+            <button class="btn small" id="btnEmailVerify">Подтвердить почту</button>
+
+            <!-- Плашка «почта подтверждена»; по умолчанию скрыта -->
+            <span class="status-badge success" id="emailOk" style="display:none">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+                Подтверждена
+            </span>
+            </div>
+        </div>
+        </div>
+
+      <div class="section">
+        <div class="actions">
+            <button class="btn small" id="btnPassToggle">Сменить пароль</button>
+        </div>
+
+        <!-- Скрытый блок смены пароля -->
+        <div id="passBlock" style="display:none">
+            <div class="inline three">
+            <div class="field" id="f-oldpass">
+                <label class="label" for="oldpass">Текущий пароль</label>
+                <input class="input" id="oldpass" type="password" placeholder="••••••••"/>
+                <span class="underline"></span>
+            </div>
+            <div class="field" id="f-newpass1">
+                <label class="label" for="newpass1">Новый пароль</label>
+                <input class="input" id="newpass1" type="password" placeholder="••••••••"/>
+                <span class="underline"></span>
+            </div>
+            <div class="field" id="f-newpass2">
+                <label class="label" for="newpass2">Повторите новый пароль</label>
+                <input class="input" id="newpass2" type="password" placeholder="••••••••"/>
+                <span class="underline"></span>
+            </div>
+            </div>
+
+            <div class="helper" id="passHint">
+            Пароль должен быть &gt; 8 символов и содержать цифру, строчную и заглавную буквы.
+            </div>
+
+            <button class="btn primary" id="btnPassChange" style="width:max-content">Сохранить пароль</button>
+        </div>
+        </div>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script type="module" src="/scripts/profile.js"></script>
+</body>
+</html>
