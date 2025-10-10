@@ -7,7 +7,7 @@ const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const pageInd = document.getElementById('pageInd');
 
-let state = { q: '', page: 1, pageSize: 13, total: 0, totalPages: 1 };
+let state = { q: '', page: 1, pageSize: 12, total: 0, totalPages: 1 };
 
 function loadState(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
@@ -163,7 +163,7 @@ nextBtn.addEventListener('click', ()=>{
 
 window.addEventListener('DOMContentLoaded', ()=>{
   const saved = loadState();
-  setPageSize(saved.pageSize || 13, { resetPage:false, silent:true });
+  setPageSize(saved.pageSize || 12, { resetPage:false, silent:true });
   state.page = saved.page || 1;
   runSearch();
 });
