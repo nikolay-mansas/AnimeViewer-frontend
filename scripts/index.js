@@ -111,11 +111,11 @@ async function fetchAnime(q, page, pageSize){
     // /api/v1/anime             -> [ [ {...}, ... ], totalPages ]
     // /api/v1/anime/search      -> [ { text, anime: [ {...}, ... ] }, totalPages ]
     let items = [];
-    let totalPages = 1;
+    let totalCount = 0;
 
     if (Array.isArray(data)) {
       const payload = data[0];
-      totalPages = Number(data[1]) || 1;
+      totalCount = Number(data[1]) || 0;
 
       if (Array.isArray(payload)) {
         items = payload;
@@ -123,6 +123,8 @@ async function fetchAnime(q, page, pageSize){
         items = payload.anime;
       }
     }
+
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
     return { items, totalPages };
   }catch(e){
