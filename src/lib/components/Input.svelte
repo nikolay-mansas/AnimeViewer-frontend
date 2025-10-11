@@ -7,7 +7,7 @@
 		autofocus?: boolean;
 		ariaLabel?: string;
 	}
-	let { placeholder = 'Поиск аниме', value = '', type = 'search', name, ariaLabel = placeholder }: Props = $props();
+	let { placeholder = 'Поиск аниме', value = $bindable(''), type = 'search', name, ariaLabel = placeholder }: Props = $props();
 
 	function onInput(e: Event) {
 		const t = e.target as HTMLInputElement;
