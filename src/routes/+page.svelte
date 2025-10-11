@@ -24,7 +24,7 @@
 	<h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide">
 		<span class="text-purple-400">β</span> AnimeViewer
 	</h1>
-	<button class="text-sm sm:text-base px-4 py-2 btn-custom">
+	<button class="btn-custom">
 		Вход
 	</button>
 </header>
