@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import AuthNotice from '$lib/components/AuthNotice.svelte';
+
 	let { children } = $props();
 </script>
 
@@ -8,6 +10,17 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<AuthNotice />
+
 <main class="min-h-screen bg-[#0a0a12] text-white font-sans">
+	<header class="flex justify-between items-center px-4 py-4 border-b border-white/10">
+		<h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide">
+			<span class="text-purple-400">β</span> AnimeViewer
+		</h1>
+		<button class="btn-custom">
+			Вход
+		</button>
+	</header>
+
 	{@render children?.()}
 </main>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import AuthNotice from '$lib/components/AuthNotice.svelte';
 	import CardGrid from '$lib/components/CardGrid.svelte';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
@@ -18,17 +17,6 @@
 <svelte:head>
 	<title>Каталог аниме – AnimeViewer</title>
 </svelte:head>
-
-<AuthNotice />
-
-<header class="flex justify-between items-center px-4 py-4 border-b border-white/10">
-	<h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide">
-		<span class="text-purple-400">β</span> AnimeViewer
-	</h1>
-	<button class="btn-custom">
-		Вход
-	</button>
-</header>
 
 <div class="max-w-screen-xl mx-auto px-4 pt-10 space-y-6">
 	<h1 class="text-3xl font-bold">Каталог аниме</h1>
