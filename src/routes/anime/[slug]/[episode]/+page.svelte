@@ -1,0 +1,18 @@
+<script lang="ts">
+	import AnimePlayer from '$lib/components/AnimePlayer.svelte';
+
+    export let data: {
+		title: string;
+		episode: number;
+		episodesTotal: number;
+		basePath: string;
+	};
+
+	const { title, episode, episodesTotal, basePath } = data;
+
+    console.log(title);
+</script>
+
+<div class="container mx-auto max-w-5xl px-4 py-6">
+	<AnimePlayer {title} {episode} {episodesTotal} {basePath} />
+</div>
