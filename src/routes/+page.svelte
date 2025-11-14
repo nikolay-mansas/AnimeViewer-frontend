@@ -4,14 +4,8 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 
-	let animes = [
-		{ title: 'Атака титанов 3', episodes: '0/12', img: '/images/Attack_on_Titan_s3_p1.webp' },
-		{ title: 'Шарлотта', episodes: '0/13', img: '/images/Charlotte.webp' },
-		{ title: 'Госпожа Кагуя: в любви как на войне', episodes: '0/4', img: '/images/Kaguya_sama_Love_is_War_s1.webp' },
-		{ title: 'Госпожа Кагуя: в любви как на войне 2', episodes: '0/12', img: '/images/Kaguya_sama_Love_is_War_s2.webp' },
-		{ title: 'Ванпанчмен 2', episodes: '0/12', img: '/images/One_Punch_Man_s2.webp' },
-		{ title: 'Атака титанов 3. Часть 2', episodes: '0/10', img: '/images/Attack_on_Titan_s3_p2.webp' }
-	];
+	let { data } = $props();
+	const { animes, total, page, pageSize } = data;
 </script>
 
 <svelte:head>
@@ -22,7 +16,7 @@
 	<h1 class="text-3xl font-bold">Каталог аниме</h1>
 	<SearchBar />
 	<CardGrid {animes} />
-	<Pagination currentPage={2} totalPages={2} />
+	<Pagination currentPage={page} totalPages={Math.ceil(total / pageSize)} />
 </div>
 
 <Footer />
