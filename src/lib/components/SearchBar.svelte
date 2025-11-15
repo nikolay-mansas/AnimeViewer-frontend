@@ -1,20 +1,34 @@
 <script lang="ts">
 	import Input from './Input.svelte';
 
-	let { q = $bindable('')} = $props();
+	let { q = $bindable(''), onSearch } = $props();
 
-	function onSearch() {
-		console.log('search:', q.trim());
+	function triggerSearch() {
+		const value = q.trim();
+		if (!value) return;
+
+		onSearch?.(value);
+
+		if (typeof document !== 'undefined') {
+			const active = document.activeElement;
+			if (active instanceof HTMLElement) active.blur();
+		}
+	}
+
+	function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		triggerSearch();
 	}
 </script>
 
-<div class="flex items-stretch gap-2">
+<form class="flex items-stretch gap-2" onsubmit={handleSubmit}>
 	<Input placeholder="Поиск аниме" bind:value={q} />
 
 	<button
+		type="submit"
 		class="btn-custom disabled:opacity-40 disabled:cursor-not-allowed"
-		onclick={onSearch}
 		disabled={q.trim() === ''}
-		>Найти
+	>
+		Найти
 	</button>
-</div>
+</form>
