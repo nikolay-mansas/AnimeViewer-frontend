@@ -20,7 +20,8 @@ export async function load({ fetch, url }) {
 		id: item.gid,
 		title: item.title,
 		episodes: `0/${item.number_episodes}`,
-		img: item.preview_path
+		img: item.preview_path,
+		href: item.url,
 	}));
 
 	return {

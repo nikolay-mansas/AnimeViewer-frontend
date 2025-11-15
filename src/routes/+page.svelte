@@ -9,7 +9,13 @@
 	let { data } = $props();
 	const { animes: initialAnimes, total: initialTotal, page: initialPage, pageSize, text: initialText } = data;
 
-	let animes = $state(initialAnimes);
+	let animes = $state(initialAnimes.map((item: any) => ({
+		id: item.gid,
+		title: item.title,
+		episodes: item.episodes,
+		img: item.img,
+		href: `/anime/${item.gid}`
+	})));
 	let total = $state(initialTotal);
 	let page = $state(initialPage);
 	let text = $state(initialText ?? '');
@@ -27,7 +33,8 @@
 			id: item.gid,
 			title: item.title,
 			episodes: `0/${item.number_episodes}`,
-			img: item.preview_path
+			img: item.preview_path,
+			href: `/anime/${item.gid}`
 		}));
 
 		total = json.total;

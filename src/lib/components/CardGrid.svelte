@@ -78,8 +78,6 @@
 
 <div bind:this={grid} class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-stretch">
 	{#each animes as anime}
-		<div class="h-full">
-			<AnimeCard {...anime} registerTitle={registerTitle} />
-		</div>
+		<AnimeCard {...anime} registerTitle={registerTitle} />
 	{/each}
 </div>
