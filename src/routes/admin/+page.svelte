@@ -1,0 +1,855 @@
+<script lang="ts">
+	import SearchBar from '$lib/components/SearchBar.svelte';
+	import { PUBLIC_API_URL } from '$env/static/public';
+
+	type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox';
+	type EntityKey = 'anime' | 'genre' | 'anime_title' | 'watch_history' | 'account' | 'anime_video';
+
+	interface Option {
+		value: string;
+		label: string;
+	}
+
+	interface FieldConfig {
+		name: string;
+		label: string;
+		type: FieldType;
+		readOnly?: boolean;
+		options?: Option[];
+	}
+
+	interface ColumnConfig {
+		key: string;
+		label: string;
+	}
+
+	interface SearchFieldConfig {
+		value: string;
+		label: string;
+	}
+
+	interface FilterConfig {
+		field: string;
+		type: 'select';
+		label: string;
+		options: Option[];
+	}
+
+	interface EntityConfig {
+		key: EntityKey;
+		label: string;
+		endpoint: string;
+		primaryField: string;
+		columns: ColumnConfig[];
+		fields: FieldConfig[];
+		searchFields: SearchFieldConfig[];
+		filters?: FilterConfig[];
+	}
+
+	type Item = Record<string, unknown>;
+
+	const statusOptions: Option[] = [
+		{ value: 'ongoing', label: 'Онгоинг' },
+		{ value: 'released', label: 'Вышел' }
+	];
+
+	const ageOptions: Option[] = [
+		{ value: 'g', label: 'G' },
+		{ value: 'pg', label: 'PG' },
+		{ value: 'pg-13', label: 'PG-13' },
+		{ value: 'r-17', label: 'R-17' },
+		{ value: 'r+', label: 'R+' }
+	];
+
+	const typeOptions: Option[] = [
+		{ value: 'tv', label: 'TV' },
+		{ value: 'movie', label: 'Фильм' },
+		{ value: 'ova', label: 'OVA' },
+		{ value: 'ona', label: 'ONA' },
+		{ value: 'special', label: 'Спецвыпуск' },
+		{ value: 'tv_special', label: 'TV спец' },
+		{ value: 'music', label: 'Музыка' },
+		{ value: 'pv', label: 'PV' },
+		{ value: 'cm', label: 'CM' }
+	];
+
+	const languageOptions: Option[] = [
+		{ value: 'ru', label: 'Русский' },
+		{ value: 'en', label: 'Английский' },
+		{ value: 'ja', label: 'Японский' },
+		{ value: 'ko', label: 'Корейский' },
+		{ value: 'zh', label: 'Китайский' }
+	];
+
+	const entityConfigs: Record<EntityKey, EntityConfig> = {
+		anime: {
+			key: 'anime',
+			label: 'Аниме',
+			endpoint: '/api/v2/anime/list',
+			primaryField: 'title',
+			columns: [
+				{ key: 'gid', label: 'GID'},
+				{ key: 'status', label: 'Статус' },
+				{ key: 'type', label: 'Тип' },
+				{ key: 'age', label: 'Возраст' },
+				{ key: 'number_episodes', label: 'Эпизоды' },
+				{ key: 'url', label: 'Ссылка' },
+				{ key: 'start_date', label: 'Начинается' },
+				{ key: 'end_date', label: 'Заканчивается' },
+				{ key: 'enable', label: 'Вкл' }
+			],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'title', label: 'Название', type: 'text' },
+				{ name: 'status', label: 'Статус', type: 'select', options: statusOptions },
+				{ name: 'type', label: 'Тип', type: 'select', options: typeOptions },
+				{ name: 'age', label: 'Возрастной рейтинг', type: 'select', options: ageOptions },
+				{ name: 'url', label: 'URL', type: 'text' },
+				{ name: 'preview_path', label: 'Постер (preview_path)', type: 'text' },
+				{ name: 'number_episodes', label: 'Кол-во эпизодов', type: 'number' },
+				{ name: 'start_date', label: 'Дата начала', type: 'text' },
+				{ name: 'end_date', label: 'Дата конца', type: 'text' },
+				{ name: 'description', label: 'Описание', type: 'textarea' },
+				{ name: 'enable', label: 'Включено', type: 'checkbox' },
+				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
+				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
+			],
+			searchFields: [
+				{ value: 'title', label: 'Название' },
+				{ value: 'gid', label: 'GID' },
+				{ value: 'url', label: 'URL' }
+			],
+			filters: [
+				{ field: 'status', type: 'select', label: 'Статус', options: statusOptions },
+				{ field: 'type', type: 'select', label: 'Тип', options: typeOptions },
+				{ field: 'age', type: 'select', label: 'Возраст', options: ageOptions }
+			]
+		},
+		genre: {
+			key: 'genre',
+			label: 'Жанры',
+			endpoint: '/api/v2/admin/genres',
+			primaryField: 'name',
+			columns: [{ key: 'gid', label: 'GID' }],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'name', label: 'Название', type: 'text' }
+			],
+			searchFields: [
+				{ value: 'name', label: 'Название' },
+				{ value: 'gid', label: 'GID' }
+			]
+		},
+		anime_title: {
+			key: 'anime_title',
+			label: 'Названия',
+			endpoint: '/api/v2/admin/anime-titles',
+			primaryField: 'name',
+			columns: [
+				{ key: 'anime_gid', label: 'Аниме GID' },
+				{ key: 'language', label: 'Язык' }
+			],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'anime_gid', label: 'Аниме GID', type: 'text' },
+				{ name: 'language', label: 'Язык', type: 'select', options: languageOptions },
+				{ name: 'name', label: 'Название', type: 'text' },
+				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
+				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
+			],
+			searchFields: [
+				{ value: 'name', label: 'Название' },
+				{ value: 'anime_gid', label: 'Аниме GID' },
+				{ value: 'gid', label: 'GID' }
+			],
+			filters: [
+				{ field: 'language', type: 'select', label: 'Язык', options: languageOptions }
+			]
+		},
+		watch_history: {
+			key: 'watch_history',
+			label: 'История просмотров',
+			endpoint: '/api/v2/admin/watch-history',
+			primaryField: 'anime_gid',
+			columns: [
+				{ key: 'account_gid', label: 'Аккаунт' },
+				{ key: 'series', label: 'Серия' },
+				{ key: 'viewed', label: 'Просмотрено' }
+			],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'anime_gid', label: 'Аниме GID', type: 'text' },
+				{ name: 'account_gid', label: 'Аккаунт GID', type: 'text' },
+				{ name: 'series', label: 'Серия', type: 'number' },
+				{ name: 'timecode', label: 'Таймкод (сек.)', type: 'number' },
+				{ name: 'viewed', label: 'Просмотрено', type: 'checkbox' },
+				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
+				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
+			],
+			searchFields: [
+				{ value: 'anime_gid', label: 'Аниме GID' },
+				{ value: 'account_gid', label: 'Аккаунт GID' },
+				{ value: 'gid', label: 'GID' }
+			]
+		},
+		account: {
+			key: 'account',
+			label: 'Аккаунты',
+			endpoint: '/api/v2/admin/accounts',
+			primaryField: 'username',
+			columns: [
+				{ key: 'email', label: 'Email' },
+				{ key: 'is_admin', label: 'Админ' },
+				{ key: 'disabled', label: 'Отключён' }
+			],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'username', label: 'Логин', type: 'text' },
+				{ name: 'email', label: 'Email', type: 'text' },
+				{ name: 'disabled', label: 'Отключён', type: 'checkbox' },
+				{ name: 'is_email_verified', label: 'Email подтверждён', type: 'checkbox' },
+				{ name: 'is_admin', label: 'Админ', type: 'checkbox' },
+				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
+				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
+			],
+			searchFields: [
+				{ value: 'username', label: 'Логин' },
+				{ value: 'email', label: 'Email' },
+				{ value: 'gid', label: 'GID' }
+			],
+			filters: [
+				{
+					field: 'disabled',
+					type: 'select',
+					label: 'Статус',
+					options: [
+						{ value: 'true', label: 'Отключён' },
+						{ value: 'false', label: 'Активен' }
+					]
+				},
+				{
+					field: 'is_admin',
+					type: 'select',
+					label: 'Роль',
+					options: [
+						{ value: 'true', label: 'Админ' },
+						{ value: 'false', label: 'Пользователь' }
+					]
+				}
+			]
+		},
+		anime_video: {
+			key: 'anime_video',
+			label: 'Видео',
+			endpoint: '/api/v2/admin/anime-videos',
+			primaryField: 'anime_gid',
+			columns: [
+				{ key: 'series', label: 'Серия' },
+				{ key: 'path', label: 'Путь' }
+			],
+			fields: [
+				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
+				{ name: 'anime_gid', label: 'Аниме GID', type: 'text' },
+				{ name: 'series', label: 'Серия', type: 'number' },
+				{ name: 'path', label: 'Путь к файлу', type: 'text' },
+				{ name: 'opening', label: 'Опенинг (сек.)', type: 'number' },
+				{ name: 'ending', label: 'Эндинг (сек.)', type: 'number' },
+				{ name: 'end', label: 'Конец (сек.)', type: 'number' },
+				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
+				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
+			],
+			searchFields: [
+				{ value: 'anime_gid', label: 'Аниме GID' },
+				{ value: 'series', label: 'Серия' },
+				{ value: 'gid', label: 'GID' }
+			]
+		}
+	};
+
+	const pageSizeOptions = [50, 100, 300] as const;
+
+	let activeEntity = $state<EntityKey>('anime');
+	let items = $state<Item[]>([]);
+	let total = $state(0);
+	let page = $state(1);
+	let pageSize = $state<number>(pageSizeOptions[0]);
+
+	let totalPages = $derived.by(() => Math.max(1, Math.ceil(total / pageSize)));
+
+	let searchInput = $state('');
+	let search = $state('');
+	let searchField = $state('');
+	let filterValues = $state<Record<string, string>>({});
+
+	let listLoading = $state(false);
+	let saving = $state(false);
+	let editingItem = $state<Item | null>(null);
+	let isNew = $state(false);
+
+	function getConfig(): EntityConfig {
+		return entityConfigs[activeEntity];
+	}
+
+	function createEmptyFor(entity: EntityKey): Item {
+		const config = entityConfigs[entity];
+		const obj: Item = {};
+		for (const field of config.fields) {
+			if (field.readOnly) continue;
+			if (field.type === 'checkbox') {
+				obj[field.name] = false;
+			} else if (field.type === 'number') {
+				obj[field.name] = '';
+			} else {
+				obj[field.name] = '';
+			}
+		}
+		return obj;
+	}
+
+	function cloneItem<T extends Item>(value: T): T {
+		if (!value) return value;
+
+		try {
+			return JSON.parse(JSON.stringify(value));
+		} catch (e) {
+			const copy = {} as T;
+			for (const key in value) {
+				if (value.hasOwnProperty(key)) {
+					copy[key] = value[key];
+				}
+			}
+			return copy;
+		}
+	}
+
+	function selectEntity(entityKey: EntityKey) {
+		if (activeEntity === entityKey) return;
+		activeEntity = entityKey;
+		page = 1;
+		search = '';
+		searchInput = '';
+		items = [];
+		total = 0;
+		editingItem = null;
+		isNew = false;
+
+		const cfg = entityConfigs[entityKey];
+		searchField = cfg.searchFields[0]?.value ?? '';
+
+		const defaults: Record<string, string> = {};
+		for (const f of cfg.filters ?? []) {
+			defaults[f.field] = '';
+		}
+		filterValues = defaults;
+	}
+
+	async function loadList() {
+		listLoading = true;
+		const config = getConfig();
+		try {
+			const params = new URLSearchParams();
+			params.set('page', String(page));
+			params.set('page_size', String(pageSize));
+
+			if (search.trim()) {
+				params.set('text', search.trim());
+				if (searchField) params.set('search_field', searchField);
+			}
+
+			for (const [key, value] of Object.entries(filterValues)) {
+				if (value !== '') {
+					params.set(key, value);
+				}
+			}
+
+			const res = await fetch(PUBLIC_API_URL + config.endpoint + '?' + params.toString());
+			const json = await res.json();
+			const data = (json.result ?? json.items ?? json) as Item[];
+
+			items = Array.isArray(data) ? data : [];
+			total = typeof json.total === 'number' ? json.total : items.length;
+		} catch (e) {
+			console.error(e);
+		} finally {
+			listLoading = false;
+		}
+	}
+
+	function openNew() {
+		editingItem = createEmptyFor(activeEntity);
+		isNew = true;
+	}
+
+	function openExisting(item: Item) {
+		editingItem = cloneItem(item);
+		isNew = false;
+	}
+
+	async function saveCurrent() {
+		if (!editingItem) return;
+		saving = true;
+		const config = getConfig();
+
+		try {
+			const gid = editingItem.gid as string | undefined;
+			const hasId = Boolean(gid);
+			const endpoint =
+				PUBLIC_API_URL +
+				config.endpoint +
+				(hasId && !isNew ? `/${encodeURIComponent(gid as string)}` : '');
+			const method = hasId && !isNew ? 'PUT' : 'POST';
+
+			const res = await fetch(endpoint, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(editingItem)
+			});
+
+			const json = await res.json();
+			editingItem = (json.result ?? json) as Item;
+			isNew = false;
+			await loadList();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function deleteCurrent() {
+		if (!editingItem) return;
+		const gid = editingItem.gid as string | undefined;
+		if (!gid) return;
+		if (!confirm('Удалить объект?')) return;
+
+		saving = true;
+		const config = getConfig();
+
+		try {
+			await fetch(PUBLIC_API_URL + config.endpoint + `/${encodeURIComponent(gid)}`, {
+				method: 'DELETE'
+			});
+			editingItem = null;
+			isNew = false;
+			await loadList();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			saving = false;
+		}
+	}
+
+	function handleSearch(query: string) {
+		search = query;
+		searchInput = query;
+		page = 1;
+	}
+
+	function goPrev() {
+		if (page <= 1) return;
+		page -= 1;
+	}
+
+	function goNext() {
+		if (page >= totalPages) return;
+		page += 1;
+	}
+
+	function goFirst() {
+		if (page === 1) return;
+		page = 1;
+	}
+
+	function goLast() {
+		if (page >= totalPages) return;
+		page = totalPages;
+	}
+
+	function updateField(field: FieldConfig, value: unknown) {
+		if (!editingItem) return;
+		if (field.type === 'number') {
+			const str = typeof value === 'string' ? value : String(value ?? '');
+			const num = str === '' ? '' : Number(str);
+			editingItem[field.name] = Number.isNaN(num) ? '' : num;
+		} else {
+			editingItem[field.name] = value;
+		}
+	}
+
+	function formatValue(value: unknown): string {
+		if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+		if (value == null) return '';
+		if (typeof value === 'string' && value.length > 80) return value.slice(0, 77) + '...';
+		return String(value);
+	}
+
+	function updateFilter(field: string, value: string) {
+		filterValues = { ...filterValues, [field]: value };
+		page = 1;
+	}
+
+	function changeSearchField(value: string) {
+		searchField = value;
+		page = 1;
+	}
+
+	function changePageSize(value: string) {
+		const num = Number(value);
+		if (!Number.isNaN(num) && num > 0) {
+			pageSize = num;
+			page = 1;
+		}
+	}
+
+	$effect(() => {
+		const cfg = getConfig();
+		if (!searchField && cfg.searchFields.length) {
+			searchField = cfg.searchFields[0].value;
+		}
+	});
+
+	$effect(() => {
+		activeEntity;
+		page;
+		search;
+		filterValues;
+		searchField;
+		pageSize;
+		loadList();
+	});
+</script>
+
+<svelte:head>
+	<title>Админ-панель – AnimeViewer</title>
+</svelte:head>
+
+<div class="max-w-screen-2xl mx-auto px-4 pt-8 pb-10 space-y-6">
+	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+		<div>
+			<h1 class="text-3xl font-bold tracking-tight">Админ-панель</h1>
+			<p class="text-sm text-white/60 mt-1">
+				Управление аниме, жанрами, пользователями, историей и видео.
+			</p>
+		</div>
+
+		<div class="flex flex-wrap gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
+			{#each Object.values(entityConfigs) as cfg}
+				<button
+					class={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+						activeEntity === cfg.key
+							? 'bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-md shadow-fuchsia-500/30'
+							: 'text-white/70 hover:text-white hover:bg-white/10'
+					}`}
+					onclick={() => selectEntity(cfg.key)}
+				>
+					{cfg.label}
+				</button>
+			{/each}
+		</div>
+	</div>
+
+	<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-6 items-start">
+		<section
+			class="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] via-white/[0.03] to-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_45px_rgба(0,0,0,0.6)] p-4 sm:p-5"
+		>
+			<div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+				<div class="flex-1 min-w-0 space-y-2">
+					<div class="flex gap-2 items-stretch">
+						<div class="flex-1 min-w-0">
+							<SearchBar bind:q={searchInput} onSearch={handleSearch} />
+						</div>
+
+						{#if getConfig().searchFields.length > 0}
+							<select
+								class="w-40 bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+								value={searchField}
+								onchange={(e) =>
+									changeSearchField((e.target as HTMLSelectElement).value)}
+							>
+								{#each getConfig().searchFields as sf}
+									<option value={sf.value}>{sf.label}</option>
+								{/each}
+							</select>
+						{/if}
+					</div>
+
+					{#if getConfig().filters && getConfig().filters.length > 0}
+						<div class="flex flex-wrap gap-2 text-[11px]">
+							{#each getConfig().filters as filter}
+								<label class="flex items-center gap-1 text-white/70">
+									<span>{filter.label}:</span>
+									<select
+										class="bg-[#14101e] border border-white/10 rounded-full px-2 pr-7 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
+										value={filterValues[filter.field] ?? ''}
+										onchange={(e) =>
+											updateFilter(
+												filter.field,
+												(e.target as HTMLSelectElement).value
+											)}
+									>
+										<option value="">Все</option>
+										{#each filter.options as opt}
+											<option value={opt.value}>{opt.label}</option>
+										{/each}
+									</select>
+								</label>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<button class="btn-custom whitespace-nowrap" onclick={openNew}>
+					Добавить
+				</button>
+			</div>
+
+			{#if listLoading}
+				<div class="py-10 text-center text-white/60 text-sm">
+					Загрузка...
+				</div>
+			{:else if items.length === 0}
+				<div class="py-10 text-center text-white/60 text-sm">
+					Ничего не найдено
+				</div>
+			{:else}
+				<div class="overflow-auto rounded-2xl border border-white/10 bg-black/20">
+					<table class="min-w-full text-sm">
+						<thead class="bg-white/5 text-[11px] uppercase tracking-wide text-white/60">
+							<tr>
+								<th class="px-3 py-2 text-left sticky left-0 z-10 bg-[#14101e]">
+									{getConfig().label}
+								</th>
+								{#each getConfig().columns as col}
+									<th class="px-3 py-2 text-left whitespace-nowrap">
+										{col.label}
+									</th>
+								{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#each items as item}
+								<tr
+									class="border-t border-white/5 hover:bg-white/5 cursor-pointer"
+									onclick={() => openExisting(item)}
+								>
+									<td class="px-3 py-2 text-[13px] font-medium sticky left-0 bg-[#14101e]">
+										{item[getConfig().primaryField] ?? '—'}
+									</td>
+									{#each getConfig().columns as col}
+										<td class="px-3 py-2 text-[13px] text-white/80 align-top">
+											{formatValue(item[col.key])}
+										</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+
+				<div
+					class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-[12px] text-white/65"
+				>
+					<div class="flex flex-wrap items-center gap-3">
+						<div>
+							Всего:
+							<span class="font-semibold text-white/80">{total}</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span>На странице:</span>
+							<select
+								class="bg-[#14101e] border border-white/10 rounded-full px-2 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
+								value={String(pageSize)}
+								onchange={(e) =>
+									changePageSize((e.target as HTMLSelectElement).value)}
+							>
+								{#each pageSizeOptions as size}
+									<option value={size}>{size}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<button
+							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							onclick={goFirst}
+							disabled={page <= 1}
+						>
+							«
+						</button>
+						<button
+							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							onclick={goPrev}
+							disabled={page <= 1}
+						>
+							←
+						</button>
+						<span>Стр. {page} из {totalPages}</span>
+						<button
+							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							onclick={goNext}
+							disabled={page >= totalPages}
+						>
+							→
+						</button>
+						<button
+							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							onclick={goLast}
+							disabled={page >= totalPages}
+						>
+							»
+						</button>
+					</div>
+				</div>
+			{/if}
+		</section>
+
+		<section
+			class="rounded-3xl border border-white/10 bg-[#0e0b17]/80 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_45px_rgba(0,0,0,0.6)] p-6 sm:p-7 min-h-[260px]"
+		>
+			{#if editingItem}
+				<div class="flex items-start justify-between gap-3 mb-4">
+					<div>
+						<h2 class="text-lg font-semibold">
+							{isNew ? 'Новый объект' : 'Редактирование'}
+						</h2>
+						<p class="text-xs text-white/60 mt-1">
+							{getConfig().label}
+						</p>
+					</div>
+					<span
+						class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-white/60"
+					>
+						{activeEntity}
+					</span>
+				</div>
+
+				<form
+					class="space-y-3 max-h-[520px] overflow-auto px-3 pb-4"
+					onsubmit={(e) => {
+						e.preventDefault();
+						saveCurrent();
+					}}
+				>
+					{#each getConfig().fields as field}
+						{#if !(isNew && field.readOnly)}
+							<div class="space-y-1">
+								{#if field.type === 'checkbox'}
+									<label class="inline-flex items-center gap-2 text-sm text-white/80">
+										<input
+											type="checkbox"
+											class="rounded border-white/30 bg-[#14101e] text-fuchsia-500 focus:ring-fuchsia-500/60"
+											checked={Boolean(editingItem[field.name])}
+											onchange={(e) =>
+												updateField(
+													field,
+													(e.target as HTMLInputElement).checked
+												)}
+											disabled={field.readOnly}
+										/>
+										<span>{field.label}</span>
+									</label>
+								{:else}
+									<label
+										class="block text-[11px] font-semibold uppercase tracking-wide text-white/55"
+										for={`${getConfig().key}-${field.name}`}
+									>
+										{field.label}
+									</label>
+
+									{#if field.type === 'textarea'}
+										<textarea
+											id={`${getConfig().key}-${field.name}`}
+											class="w-full resize-y min-h-[80px] bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											value={editingItem[field.name] ?? ''}
+											oninput={(e) =>
+												updateField(
+													field,
+													(e.target as HTMLTextAreaElement).value
+												)}
+											readonly={field.readOnly}
+										></textarea>
+									{:else if field.type === 'select'}
+										<select
+											id={`${getConfig().key}-${field.name}`}
+											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											value={editingItem[field.name] ?? ''}
+											onchange={(e) =>
+												updateField(
+													field,
+													(e.target as HTMLSelectElement).value
+												)}
+											disabled={field.readOnly}
+										>
+											<option value="">—</option>
+											{#each field.options ?? [] as opt}
+												<option value={opt.value}>
+													{opt.label}
+												</option>
+											{/each}
+										</select>
+									{:else}
+										<input
+											id={`${getConfig().key}-${field.name}`}
+											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											type={field.type === 'number' ? 'number' : 'text'}
+											value={editingItem[field.name] ?? ''}
+											oninput={(e) =>
+												updateField(
+													field,
+													(e.target as HTMLInputElement).value
+												)}
+											readonly={field.readOnly}
+										/>
+									{/if}
+								{/if}
+							</div>
+						{/if}
+					{/each}
+
+					<div class="flex flex-wrap items-center gap-3 pt-2">
+						<button
+							type="submit"
+							class="btn-custom disabled:opacity-50 disabled:cursor-not-allowed"
+							disabled={saving}
+						>
+							{saving ? 'Сохранение...' : 'Сохранить'}
+						</button>
+						<button
+							type="button"
+							class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10"
+							onclick={() => {
+								editingItem = null;
+								isNew = false;
+							}}
+							disabled={saving}
+						>
+							Отмена
+						</button>
+						{#if !isNew}
+							<button
+								type="button"
+								class="ml-auto px-4 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-sm font-semibold disabled:opacity-50"
+								onclick={deleteCurrent}
+								disabled={saving}
+							>
+								Удалить
+							</button>
+						{/if}
+					</div>
+				</form>
+			{:else}
+				<div
+					class="h-full flex flex-col items-center justify-center text-center text-white/60 px-4"
+				>
+					<p class="text-sm mb-3">
+						Выберите объект из списка слева или создайте новый.
+					</p>
+					<button class="btn-custom text-sm" onclick={openNew}>
+						Добавить {getConfig().label.toLowerCase()}
+					</button>
+				</div>
+			{/if}
+		</section>
+	</div>
+</div>
