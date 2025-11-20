@@ -16,6 +16,7 @@
 		type: FieldType;
 		readOnly?: boolean;
 		options?: Option[];
+		nullable?: boolean;
 	}
 
 	interface ColumnConfig {
@@ -288,9 +289,9 @@
 				{ name: 'anime_gid', label: 'Аниме GID', type: 'text' },
 				{ name: 'series', label: 'Серия', type: 'number' },
 				{ name: 'path', label: 'Путь к файлу', type: 'text' },
-				{ name: 'opening', label: 'Опенинг (сек.)', type: 'number' },
-				{ name: 'ending', label: 'Эндинг (сек.)', type: 'number' },
-				{ name: 'end', label: 'Конец (сек.)', type: 'number' },
+				{ name: 'opening', label: 'Опенинг (сек.)', type: 'number', nullable: true },
+				{ name: 'ending', label: 'Эндинг (сек.)', type: 'number', nullable: true },
+				{ name: 'end', label: 'Конец (сек.)', type: 'number', nullable: true },
 				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
 				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
 			],
@@ -333,6 +334,8 @@
 			if (field.readOnly) continue;
 			if (field.type === 'checkbox') {
 				obj[field.name] = false;
+			} else if (field.nullable) {
+				obj[field.name] = null;
 			} else if (field.type === 'number') {
 				obj[field.name] = '';
 			} else {
@@ -517,10 +520,22 @@
 		if (!editingItem) return;
 		if (field.type === 'number') {
 			const str = typeof value === 'string' ? value : String(value ?? '');
-			const num = str === '' ? '' : Number(str);
-			editingItem[field.name] = Number.isNaN(num) ? '' : num;
+			if (str === '') {
+				editingItem[field.name] = field.nullable ? null : '';
+				return;
+			}
+			const num = Number(str);
+			editingItem[field.name] = Number.isNaN(num)
+				? field.nullable
+					? null
+					: ''
+				: num;
 		} else {
-			editingItem[field.name] = value;
+			if (field.nullable && (value === '' || value == null)) {
+				editingItem[field.name] = null;
+			} else {
+				editingItem[field.name] = value;
+			}
 		}
 	}
 
