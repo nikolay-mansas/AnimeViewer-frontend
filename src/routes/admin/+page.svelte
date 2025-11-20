@@ -35,10 +35,17 @@
 		options: Option[];
 	}
 
+	interface EntityEndpoints {
+		list: string;
+		create: string;
+		update: string;
+		delete: string;
+	}
+
 	interface EntityConfig {
 		key: EntityKey;
 		label: string;
-		endpoint: string;
+		endpoints: EntityEndpoints;
 		primaryField: string;
 		columns: ColumnConfig[];
 		fields: FieldConfig[];
@@ -85,10 +92,14 @@
 		anime: {
 			key: 'anime',
 			label: 'Аниме',
-			endpoint: '/api/v2/anime/list',
+			endpoints: {
+				list: '/api/v2/anime/list',
+				create: '/api/v2/anime/list',
+				update: '/api/v2/anime/list/{gid}',
+				delete: '/api/v2/anime/list/{gid}'
+			},
 			primaryField: 'title',
 			columns: [
-				{ key: 'gid', label: 'GID'},
 				{ key: 'status', label: 'Статус' },
 				{ key: 'type', label: 'Тип' },
 				{ key: 'age', label: 'Возраст' },
@@ -128,7 +139,12 @@
 		genre: {
 			key: 'genre',
 			label: 'Жанры',
-			endpoint: '/api/v2/admin/genres',
+			endpoints: {
+				list: '/api/v2/anime/genre/list',
+				create: '/api/v2/anime/genre/list',
+				update: '/api/v2/anime/genre/list/{gid}',
+				delete: '/api/v2/anime/genre/list/{gid}'
+			},
 			primaryField: 'name',
 			columns: [{ key: 'gid', label: 'GID' }],
 			fields: [
@@ -143,7 +159,12 @@
 		anime_title: {
 			key: 'anime_title',
 			label: 'Названия',
-			endpoint: '/api/v2/admin/anime-titles',
+			endpoints: {
+				list: '/api/v2/anime/title/list',
+				create: '/api/v2/anime/title/list',
+				update: '/api/v2/anime/title/list/{gid}',
+				delete: '/api/v2/anime/title/list/{gid}'
+			},
 			primaryField: 'name',
 			columns: [
 				{ key: 'anime_gid', label: 'Аниме GID' },
@@ -169,7 +190,12 @@
 		watch_history: {
 			key: 'watch_history',
 			label: 'История просмотров',
-			endpoint: '/api/v2/admin/watch-history',
+			endpoints: {
+				list: '/api/v2/anime/watch-history/list',
+				create: '/api/v2/anime/watch-history/list',
+				update: '/api/v2/anime/watch-history/list/{gid}',
+				delete: '/api/v2/anime/watch-history/list/{gid}'
+			},
 			primaryField: 'anime_gid',
 			columns: [
 				{ key: 'account_gid', label: 'Аккаунт' },
@@ -195,7 +221,12 @@
 		account: {
 			key: 'account',
 			label: 'Аккаунты',
-			endpoint: '/api/v2/admin/accounts',
+			endpoints: {
+				list: '/api/v2/account/list',
+				create: '/api/v2/account',
+				update: '/api/v2/account/{gid}',
+				delete: '/api/v2/account/{gid}'
+			},
 			primaryField: 'username',
 			columns: [
 				{ key: 'email', label: 'Email' },
@@ -241,7 +272,12 @@
 		anime_video: {
 			key: 'anime_video',
 			label: 'Видео',
-			endpoint: '/api/v2/admin/anime-videos',
+			endpoints: {
+				list: '/api/v2/video/list',
+				create: '/api/v2/video',
+				update: '/api/v2/video/{gid}',
+				delete: '/api/v2/video/{gid}'
+			},
 			primaryField: 'anime_gid',
 			columns: [
 				{ key: 'series', label: 'Серия' },
@@ -322,6 +358,14 @@
 		}
 	}
 
+	function buildEndpoint(path: string, params: Record<string, string>): string {
+		let result = path;
+		for (const [key, value] of Object.entries(params)) {
+			result = result.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value));
+		}
+		return result;
+	}
+
 	function selectEntity(entityKey: EntityKey) {
 		if (activeEntity === entityKey) return;
 		activeEntity = entityKey;
@@ -362,7 +406,7 @@
 				}
 			}
 
-			const res = await fetch(PUBLIC_API_URL + config.endpoint + '?' + params.toString());
+			const res = await fetch(PUBLIC_API_URL + config.endpoints.list + '?' + params.toString());
 			const json = await res.json();
 			const data = (json.result ?? json.items ?? json) as Item[];
 
@@ -393,13 +437,16 @@
 		try {
 			const gid = editingItem.gid as string | undefined;
 			const hasId = Boolean(gid);
-			const endpoint =
-				PUBLIC_API_URL +
-				config.endpoint +
-				(hasId && !isNew ? `/${encodeURIComponent(gid as string)}` : '');
-			const method = hasId && !isNew ? 'PUT' : 'POST';
 
-			const res = await fetch(endpoint, {
+			let path = config.endpoints.create;
+			let method: 'POST' | 'PUT' = 'POST';
+
+			if (hasId && !isNew) {
+				path = buildEndpoint(config.endpoints.update, { gid: gid as string });
+				method = 'PUT';
+			}
+
+			const res = await fetch(PUBLIC_API_URL + path, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(editingItem)
@@ -426,7 +473,8 @@
 		const config = getConfig();
 
 		try {
-			await fetch(PUBLIC_API_URL + config.endpoint + `/${encodeURIComponent(gid)}`, {
+			const path = buildEndpoint(config.endpoints.delete, { gid });
+			await fetch(PUBLIC_API_URL + path, {
 				method: 'DELETE'
 			});
 			editingItem = null;
