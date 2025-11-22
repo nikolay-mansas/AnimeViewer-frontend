@@ -3,7 +3,7 @@
 	import { PUBLIC_API_URL } from '$env/static/public';
 
 	type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox';
-	type EntityKey = 'anime' | 'genre' | 'anime_title' | 'watch_history' | 'account' | 'anime_video';
+	type EntityKey = 'anime' | 'genre' | 'anime_title' | 'watcher' | 'account' | 'anime_video';
 
 	interface Option {
 		value: string;
@@ -162,9 +162,9 @@
 			label: 'Названия',
 			endpoints: {
 				list: '/api/v2/anime/title/list',
-				create: '/api/v2/anime/title/list',
-				update: '/api/v2/anime/title/list/{gid}',
-				delete: '/api/v2/anime/title/list/{gid}'
+				create: '/api/v2/anime/title',
+				update: '/api/v2/anime/title/{gid}',
+				delete: '/api/v2/anime/title/{gid}'
 			},
 			primaryField: 'name',
 			columns: [
@@ -188,20 +188,21 @@
 				{ field: 'language', type: 'select', label: 'Язык', options: languageOptions }
 			]
 		},
-		watch_history: {
-			key: 'watch_history',
+		watcher: {
+			key: 'watcher',
 			label: 'История просмотров',
 			endpoints: {
-				list: '/api/v2/anime/watch-history/list',
-				create: '/api/v2/anime/watch-history/list',
-				update: '/api/v2/anime/watch-history/list/{gid}',
-				delete: '/api/v2/anime/watch-history/list/{gid}'
+				list: '/api/v2/watcher/list',
+				create: '/api/v2/watcher',
+				update: '/api/v2/watcher/{gid}',
+				delete: '/api/v2/watcher/{gid}'
 			},
 			primaryField: 'anime_gid',
 			columns: [
 				{ key: 'account_gid', label: 'Аккаунт' },
 				{ key: 'series', label: 'Серия' },
-				{ key: 'viewed', label: 'Просмотрено' }
+				{ key: 'timecode', label: 'Таймкод' },
+				{ key: 'viewed', label: 'Просмотрено' },
 			],
 			fields: [
 				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
