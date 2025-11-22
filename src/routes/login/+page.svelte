@@ -127,9 +127,9 @@
 			</div>
 		{/if}
 
-		<form class="space-y-4" on:submit={handleSubmit}>
+		<form class="space-y-4" onsubmit={handleSubmit}>
 			<div class="space-y-1.5">
-				<label class="text-xs uppercase tracking-wide text-white/60">Username</label>
+				<label for="username" class="text-xs uppercase tracking-wide text-white/60">Username</label>
 				<Input
 					type="text"
 					placeholder="Admin"
@@ -143,7 +143,7 @@
 			</div>
 
 			<div class="space-y-1.5">
-				<label class="text-xs uppercase tracking-wide text-white/60">Пароль</label>
+				<label for="password" class="text-xs uppercase tracking-wide text-white/60">Пароль</label>
 				<Input
 					type="password"
 					placeholder="Минимум 8 символов"
