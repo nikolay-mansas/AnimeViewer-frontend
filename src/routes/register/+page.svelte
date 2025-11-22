@@ -1,0 +1,231 @@
+<script lang="ts">
+	import Input from '$lib/components/Input.svelte';
+	import { goto } from '$app/navigation';
+	import { PUBLIC_API_URL } from '$env/static/public';
+	import { auth } from '$lib/stores/auth';
+
+	const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+	const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+	let email = $state('');
+	let username = $state('');
+	let password = $state('');
+	let passwordRepeat = $state('');
+	let loading = $state(false);
+	let error = $state<string | null>(null);
+	let submitted = $state(false);
+
+	function getEmailError(value: string): string | null {
+		const v = value.trim();
+
+		if (!v) return 'Введите email';
+		if (v.length > 64) return 'Email не может быть длиннее 64 символов';
+		if (!EMAIL_REGEX.test(v)) return 'Введите корректный email';
+
+		return null;
+	}
+
+	function getUsernameError(value: string): string | null {
+		const v = value.trim();
+
+		if (!v) return 'Введите никнейм';
+		if (v.length < 6) return 'Никнейм должен содержать минимум 6 символов';
+		if (v.length > 64) return 'Никнейм не может быть длиннее 64 символов';
+		if (!USERNAME_REGEX.test(v)) return 'Допустимы только латинские буквы, цифры и "_"';
+
+		return null;
+	}
+
+	function getPasswordError(value: string): string | null {
+		if (!value) return 'Введите пароль';
+		if (value.length < 8) return 'Пароль должен содержать минимум 8 символов';
+		if (value.length > 64) return 'Пароль не может быть длиннее 64 символов';
+		return null;
+	}
+
+	function getPasswordRepeatError(password: string, repeat: string): string | null {
+		if (!repeat && !submitted) return null;
+		if (!repeat && submitted) return 'Повторите пароль';
+		if (password !== repeat) return 'Пароли не совпадают';
+		return null;
+	}
+
+	const emailError = $derived(
+		email === '' && !submitted ? null : getEmailError(email)
+	);
+	const usernameError = $derived(
+		username === '' && !submitted ? null : getUsernameError(username)
+	);
+	const passwordError = $derived(
+		password === '' && !submitted ? null : getPasswordError(password)
+	);
+	const passwordRepeatError = $derived(
+		passwordRepeat === '' && !submitted ? null : getPasswordRepeatError(password, passwordRepeat)
+	);
+
+	const canSubmit = $derived(
+		!loading &&
+		!getEmailError(email) &&
+		!getUsernameError(username) &&
+		!getPasswordError(password) &&
+		!getPasswordRepeatError(password, passwordRepeat)
+	);
+
+	$effect(() => {
+		if ($auth.token) {
+			goto('/');
+		}
+	});
+
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		submitted = true;
+
+		if (!canSubmit) return;
+
+		error = null;
+		loading = true;
+
+		try {
+			const cleanEmail = email.trim();
+			const cleanUsername = username.trim();
+
+			const body = new URLSearchParams();
+			body.set('email', cleanEmail);
+			body.set('username', cleanUsername);
+			body.set('password', password);
+
+			const res = await fetch(PUBLIC_API_URL + '/api/v2/auth/signup', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body
+			});
+
+			const data = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				let message = 'Не удалось зарегистрироваться. Попробуйте ещё раз.';
+
+				const detail = data?.detail;
+
+				if (typeof detail === 'string') {
+					message = detail;
+				} else if (Array.isArray(detail) && detail.length && detail[0]?.msg) {
+					message = detail[0].msg;
+				} else if (data?.message) {
+					message = data.message;
+				} else if (res.status === 409) {
+					message = 'Пользователь с такими данными уже существует.';
+				}
+
+				throw new Error(message);
+			}
+
+			const token = data?.token ?? data?.access_token;
+
+			if (token) {
+				const displayName = cleanUsername || cleanEmail;
+				auth.set({ token, username: displayName });
+				goto('/');
+			} else {
+				goto('/login');
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Произошла ошибка. Попробуйте ещё раз.';
+		} finally {
+			loading = false;
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>Регистрация – AnimeViewer</title>
+</svelte:head>
+
+<section class="max-w-screen-sm mx-auto px-4 py-10">
+	<div class="bg-[#0f0d19] border border-violet-300/20 rounded-2xl px-5 py-7 sm:px-8 sm:py-9 shadow-[0_0_28px_rgba(139,109,232,0.22)]">
+		<h1 class="text-2xl sm:text-3xl font-bold mb-6">Регистрация</h1>
+
+		{#if error}
+			<div class="mb-4 text-sm text-red-300 bg-red-500/10 border border-red-500/40 rounded-lg px-3 py-2">
+				{error}
+			</div>
+		{/if}
+
+		<form class="space-y-4" on:submit={handleSubmit}>
+			<div class="space-y-1.5">
+				<label class="text-xs uppercase tracking-wide text-white/60">Email</label>
+				<Input
+					type="email"
+					placeholder="you@example.com"
+					bind:value={email}
+					name="email"
+					ariaLabel="Email"
+				/>
+				{#if emailError}
+					<p class="text-xs text-red-300 mt-1">{emailError}</p>
+				{/if}
+			</div>
+
+			<div class="space-y-1.5">
+				<label class="text-xs uppercase tracking-wide text-white/60">Никнейм</label>
+				<Input
+					type="text"
+					placeholder="Kira"
+					bind:value={username}
+					name="username"
+					ariaLabel="Никнейм"
+				/>
+				{#if usernameError}
+					<p class="text-xs text-red-300 mt-1">{usernameError}</p>
+				{/if}
+			</div>
+
+			<div class="space-y-1.5">
+				<label class="text-xs uppercase tracking-wide text-white/60">Пароль</label>
+				<Input
+					type="password"
+					placeholder="Минимум 8 символов"
+					bind:value={password}
+					name="password"
+					ariaLabel="Пароль"
+				/>
+				{#if passwordError}
+					<p class="text-xs text-red-300 mt-1">{passwordError}</p>
+				{/if}
+			</div>
+
+			<div class="space-y-1.5">
+				<label class="text-xs uppercase tracking-wide text-white/60">Повтор пароля</label>
+				<Input
+					type="password"
+					placeholder="Повторите пароль"
+					bind:value={passwordRepeat}
+					name="passwordRepeat"
+					ariaLabel="Повтор пароля"
+				/>
+
+				{#if passwordRepeatError}
+					<p class="text-xs text-red-300 mt-1">{passwordRepeatError}</p>
+				{/if}
+			</div>
+
+			<button
+				type="submit"
+				class="btn-custom w-full justify-center mt-2 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+				disabled={!canSubmit}
+			>
+				{#if loading}
+					Регистрируем...
+				{:else}
+					Зарегистрироваться
+				{/if}
+			</button>
+		</form>
+
+		<p class="mt-6 text-xs sm:text-sm text-white/60 text-center">
+			Уже есть аккаунт?
+			<a href="/login" class="text-fuchsia-400 hover:text-fuchsia-300 font-medium">Войти</a>
+		</p>
+	</div>
+</section>
