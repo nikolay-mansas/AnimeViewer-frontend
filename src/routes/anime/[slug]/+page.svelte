@@ -7,6 +7,7 @@
 	const {
 		title,
 		titleJp,
+		titles,
 		start_date,
 		end_date,
 		episodesTotal,
@@ -21,6 +22,7 @@
 <AnimeProfile
 	title={title}
 	titleJp={titleJp}
+	titles={titles}
 	start_date={start_date}
 	end_date={end_date}
 	episodes={episodesTotal}

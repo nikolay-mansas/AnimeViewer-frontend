@@ -51,6 +51,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 
 	const title = anime.title;
 	const titleJp = slug;
+	const titles = anime.titles;
 	const start_date = anime.start_date;
 	const end_date = anime.end_date;
 	const episodesTotal = anime.number_episodes;
@@ -68,6 +69,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	return {
 		title,
 		titleJp,
+		titles,
 		start_date,
 		end_date,
 		episodesTotal,

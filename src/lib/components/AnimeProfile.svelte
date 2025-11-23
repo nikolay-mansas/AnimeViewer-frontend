@@ -16,9 +16,19 @@
 		result: WatcherItem[];
 	};
 
+	type AnimeTitle = {
+		gid: string;
+		anime_gid: string;
+		language: string;
+		name: string;
+		created_at: string;
+		updated_at: string;
+	};
+
 	interface Props {
 		title: string;
 		titleJp: string;
+		titles: AnimeTitle[];
 		start_date: number;
 		end_date: number | null;
 		episodes: number;
@@ -32,6 +42,7 @@
 	let {
 		title,
 		titleJp,
+		titles,
 		start_date,
 		end_date,
 		episodes,
@@ -43,6 +54,9 @@
 	}: Props = $props();
 
 	let episodesWatchedClient = $state<EpisodesWatched>({ ...episodesWatched });
+
+	let showAltTitles = $state(false);
+	const altTitles = titles;
 
 	function openEpisode(ep: number) {
 		goto(`/anime/${titleJp}/${ep}`);
@@ -114,8 +128,54 @@
 							</span>
 						{/each}
 					</div>
-				</div>
+					{#if altTitles && altTitles.length}
+						<div class="mt-1 sm:mt-2">
+							<button
+								type="button"
+								class="inline-flex items-center gap-1 text-xs sm:text-sm text-purple-300/80 hover:text-purple-200 transition-colors"
+								onclick={() => (showAltTitles = !showAltTitles)}
+							>
+								<span>
+									{showAltTitles ? 'Альтернативные названия' : 'Альтернативные названия'}
+								</span>
+								<svg
+									class={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 ${showAltTitles ? 'rotate-180' : ''}`}
+									viewBox="0 0 20 20"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									aria-hidden="true"
+								>
+									<path
+										d="M5 7.5L10 12.5L15 7.5"
+										stroke="currentColor"
+										stroke-width="1.6"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+							</button>
 
+							{#if showAltTitles}
+								<ul class="mt-1.5 sm:mt-2 space-y-0.5 text-xs sm:text-sm text-purple-100/90">
+									{#each altTitles as alt}
+										<li class="flex flex-wrap items-baseline gap-1 sm:gap-1.5">
+											{#if alt.language}
+												<span
+													class="uppercase text-[9px] sm:text-[10px] tracking-wide text-purple-300/70 bg-white/5 rounded-full px-1.5 py-0.5"
+												>
+													{alt.language}
+												</span>
+											{/if}
+											<span class="break-words">
+												{alt.name}
+											</span>
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</div>
 				<p class="text-white/80 leading-relaxed">
 					{description}
 				</p>
