@@ -98,12 +98,12 @@
 				throw new Error(message);
 			}
 
-			const token = json?.token ?? json?.access_token;
+			const token: string | null = json?.access_token;
 			if (!token) {
 				throw new Error('Сервер не вернул токен авторизации');
 			}
 
-			auth.set({ token, username: cleanUsername });
+			auth.setToken(token);
 			goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Произошла ошибка. Попробуйте ещё раз.';

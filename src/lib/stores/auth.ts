@@ -3,51 +3,51 @@ import { browser } from '$app/environment';
 
 export type AuthState = {
 	token: string | null;
-	username: string | null;
 };
 
 const defaultState: AuthState = {
-	token: null,
-	username: null
+	token: null
 };
 
 function createAuthStore() {
 	let initial = defaultState;
 
 	if (browser) {
-		const raw = localStorage.getItem('auth');
-		if (raw) {
-			try {
-				const parsed = JSON.parse(raw);
-				if (parsed && typeof parsed === 'object') {
-					initial = {
-						token: parsed.token ?? null,
-						username: parsed.username ?? null
-					};
-				}
-			} catch {
-				initial = defaultState;
-			}
-		}
+		const raw = localStorage.getItem('auth_token');
+		initial = {
+			token: raw ? raw : null
+		};
 	}
 
-	const { subscribe, set } = writable<AuthState>(initial);
+	const { subscribe, set, update } = writable<AuthState>(initial);
 
 	if (browser) {
 		subscribe((value) => {
-			localStorage.setItem('auth', JSON.stringify(value));
+			if (value.token) {
+				localStorage.setItem('auth_token', value.token);
+			} else {
+				localStorage.removeItem('auth_token');
+			}
 		});
 	}
 
 	return {
 		subscribe,
-		set,
+		setToken(token: string) {
+			set({ token });
+		},
 		logout() {
 			set(defaultState);
-			if (browser) {
-				localStorage.removeItem('auth');
-			}
-		}
+			if (browser) localStorage.removeItem('auth_token');
+		},
+		hasToken(): boolean {
+			if (!browser) return false;
+			const raw = localStorage.getItem('auth_token');
+			return !!raw;
+		},
+		getToken(): string | null {
+			return localStorage.getItem('auth_token');
+		},
 	};
 }
 

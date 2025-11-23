@@ -121,11 +121,11 @@
 				throw new Error(message);
 			}
 
-			const token = data?.token ?? data?.access_token;
+			const token: string | null = data?.access_token;
 
 			if (token) {
 				const displayName = cleanUsername || cleanEmail;
-				auth.set({ token, username: displayName });
+				auth.setToken(token);
 				goto('/');
 			} else {
 				goto('/login');

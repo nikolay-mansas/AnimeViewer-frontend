@@ -1,27 +1,32 @@
 <script lang="ts">
-    import AnimeProfile from "$lib/components/AnimeProfile.svelte";
+	import AnimeProfile from '$lib/components/AnimeProfile.svelte';
+	import type { PageData } from './$types';
 
-    export let data: {
-		title: string;
-		titleJp: string;
-		year: number;
-		episodesTotal: number;
-        imageUrl: string;
-        description: string;
-        genres: Array<string>;
-        episodesWatched: Record<number, { progress: number }>;
-	};
+	export let data: PageData;
 
-	const { title, titleJp, year, episodesTotal, imageUrl, description, genres, episodesWatched } = data;
+	const {
+		title,
+		titleJp,
+		start_date,
+		end_date,
+		episodesTotal,
+		imageUrl,
+		description,
+		genres,
+		episodesWatched,
+		animeGid
+	} = data;
 </script>
 
 <AnimeProfile
 	title={title}
 	titleJp={titleJp}
-	year={year}
+	start_date={start_date}
+	end_date={end_date}
 	episodes={episodesTotal}
 	imageUrl={imageUrl}
 	description={description}
 	genres={genres}
 	episodesWatched={episodesWatched}
+	animeGid={animeGid}
 />
