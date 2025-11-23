@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Input from '$lib/components/Input.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { auth } from '$lib/stores/auth';
@@ -229,3 +230,5 @@
 		</p>
 	</div>
 </section>
+
+<Footer />

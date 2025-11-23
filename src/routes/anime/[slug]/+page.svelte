@@ -1,5 +1,6 @@
 <script lang="ts">
 	import AnimeProfile from '$lib/components/AnimeProfile.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -32,3 +33,5 @@
 	episodesWatched={episodesWatched}
 	animeGid={animeGid}
 />
+
+<Footer />
