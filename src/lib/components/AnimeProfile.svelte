@@ -183,18 +183,15 @@
 			<section class="rounded-2xl border border-white/10 bg-[#0e0b17]/70 backdrop-blur-sm p-4 sm:p-5">
 				<h3 class="text-lg font-semibold mb-3 text-white">Серии</h3>
 
-				<div
-					class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-3"
-				>
+				<div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(88px,1fr))]">
 					{#each epNumbers as ep}
 						<button
-							class={`group episode-card rounded-xl border transition-all duration-200
+							class={`group episode-card min-w-[88px] min-h-[88px] text-[clamp(12px,0.9vw,14px)] rounded-xl border transition-all duration-200
 								${episodesWatchedClient[ep]?.progress === 100
 									? 'border-purple-400/25 bg-purple-400/10 text-white'
 									: 'border-violet-300/20 bg-[#14101e] text-white/90 hover:bg-[#191428]'
 								}
 							`}
-							style="height: 88px"
 							aria-label={`Открыть серию ${ep}`}
 							onclick={() => openEpisode(ep)}
 						>
@@ -202,7 +199,9 @@
 								<div class="text-sm font-semibold">Эп. {ep}</div>
 
 								{#if episodesWatchedClient[ep]?.progress === 100 || episodesWatchedClient[ep]?.viewed}
-									<div class="mt-2 text-[13px] text-white/70">просмотрено</div>
+									<div class="mt-2 text-[clamp(11px,0.75vw,13px)] text-white/70 text-center leading-tight">
+										просмотрено
+									</div>
 								{:else if episodesWatchedClient[ep]?.progress > 0 && episodesWatchedClient[ep]?.progress < 100}
 									<div class="mt-2 w-full h-1.5 bg-[#261d42] rounded-full overflow-hidden">
 										<div
