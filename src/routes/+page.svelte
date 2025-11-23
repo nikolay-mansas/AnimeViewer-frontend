@@ -14,8 +14,9 @@
 		title: item.title,
 		episodes: item.episodes,
 		img: item.img,
-		href: `/anime/${item.gid}`
+		href: `/anime/${item.href}`
 	})));
+
 	let total = $state(initialTotal);
 	let page = $state(initialPage);
 	let text = $state(initialText ?? '');
@@ -34,7 +35,7 @@
 			title: item.title,
 			episodes: `0/${item.number_episodes}`,
 			img: item.preview_path,
-			href: `/anime/${item.gid}`
+			href: `/anime/${item.url}`
 		}));
 
 		total = json.total;

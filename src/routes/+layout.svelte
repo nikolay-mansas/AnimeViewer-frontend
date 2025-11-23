@@ -33,9 +33,6 @@
 
 		<div class="flex items-center gap-3">
 			{#if loggedIn}
-				<span class="hidden xs:inline text-xs sm:text-sm text-white/70 max-w-[150px] truncate">
-					{$auth.username}
-				</span>
 				<button class="btn-custom text-sm sm:text-base" type="button" onclick={logout}>
 					Выход
 				</button>

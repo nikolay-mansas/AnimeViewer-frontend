@@ -91,7 +91,6 @@
 					{ progress: item.percentage, viewed: item.viewed }
 				])
 			);
-			console.log(episodesWatchedClient);
 		} catch {
 		}
 	});

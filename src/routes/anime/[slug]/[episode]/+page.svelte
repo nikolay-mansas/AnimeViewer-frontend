@@ -9,8 +9,6 @@
 	};
 
 	const { title, episode, episodesTotal, basePath } = data;
-
-    console.log(title);
 </script>
 
 <div class="container mx-auto max-w-5xl px-4 py-6">
