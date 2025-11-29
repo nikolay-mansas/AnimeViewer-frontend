@@ -9,10 +9,10 @@
 	import FullscreenExitIcon from '@iconify-svelte/material-symbols/fullscreen-exit-rounded';
 
 	const DEFAULT_SRC =
-		'https://files.vidstack.io/sprite-fight/hls/stream.m3u8';
+		'http://localhost:5173/s3/1/hls/master.m3u8';
 
 	const DEFAULT_POSTER =
-		'https://i.ytimg.com/vi/AZSTT9BLRB8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAzSm4d9RtjDqyyJaVkXXpt5NoPBw';
+		'http://localhost:5173/s3/1/hls/preview.webp';
 
 	// дискретные скорости и метки для ползунка
 	const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -433,7 +433,7 @@
 
 <div
 	bind:this={playerEl}
-	class="player relative w-full max-w-4xl aspect-video rounded-lg overflow-hidden bg-black"
+	class="player relative w-full h-full rounded-lg overflow-hidden bg-black"
 >
 	<video
 		bind:this={videoEl}
@@ -642,6 +642,8 @@
 
 	.player {
 		position: relative;
+		width: 100%;
+		height: 100%;
 	}
 
 	.controls {

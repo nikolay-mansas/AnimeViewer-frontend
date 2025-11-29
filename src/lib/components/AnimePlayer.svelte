@@ -1,10 +1,31 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	let { title = 'Аниме', episode = 1, episodesTotal = 1, basePath = '/anime/example' } = $props();
+	import HlsVideoPlayer from '$lib/components/HlsVideoPlayer.svelte';
 
-	// сделаем URL-ы реактивными по пропсам
-	let prevUrl = $derived.by(() => (episode > 1 ? `${basePath}/${episode - 1}` : null));
-	let nextUrl = $derived.by(() => (episode < episodesTotal ? `${basePath}/${episode + 1}` : null));
+	interface Props {
+		title?: string;
+		episode?: number;
+		episodesTotal?: number;
+		basePath?: string;
+		src?: string;
+		poster?: string;
+	}
+
+	let {
+		title = 'Аниме',
+		episode = 1,
+		episodesTotal = 1,
+		basePath = '/anime/example',
+		src,
+		poster
+	}: Props = $props();
+
+	let prevUrl = $derived.by(() =>
+		episode > 1 ? `${basePath}/${episode - 1}` : null
+	);
+	let nextUrl = $derived.by(() =>
+		episode < episodesTotal ? `${basePath}/${episode + 1}` : null
+	);
 	let allEpisodesUrl = $derived.by(() => basePath);
 
 	function go(url: string | null) {
@@ -16,13 +37,11 @@
 	class="relative border border-white/10 rounded-3xl px-4 pt-2 sm:pt-3 pb-4 sm:pb-5 bg-gradient-to-b from-white/5 to-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden"
 >
 	<div class="mb-3 px-1">
-		<!-- выравниваем по базовой линии -->
 		<div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
 			<h2 class="font-extrabold tracking-wide text-[clamp(22px,3.6vw,34px)] leading-tight">
 				{title}
 			</h2>
 
-			<!-- оставляем как inline-элемент, чтобы baseline был у текста -->
 			<span
 				class="font-semibold text-sm sm:text-[15px] px-2.5 py-1.5 rounded-xl text-white/80 border border-white/10 bg-white/10 backdrop-blur-[2px]"
 			>
@@ -31,7 +50,9 @@
 		</div>
 	</div>
 
-	<div class="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black"></div>
+	<div class="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
+		<HlsVideoPlayer {src} {poster} />
+	</div>
 
 	<div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
 		<button
