@@ -7,6 +7,9 @@
 		episode: number;
 		episodesTotal: number;
 		basePath: string;
+		src?: string;
+		opening?: number | null;
+		end?: number | null;
 	}
 
 	interface PageProps {
@@ -14,12 +17,20 @@
 	}
 
 	let { data }: PageProps = $props();
-
-	const { title, episode, episodesTotal, basePath } = data;
 </script>
 
 <div class="container mx-auto max-w-5xl px-4 py-6">
-	<AnimePlayer {title} {episode} {episodesTotal} {basePath} />
+	{#key data.episode}
+		<AnimePlayer
+			title={data.title}
+			episode={data.episode}
+			episodesTotal={data.episodesTotal}
+			basePath={data.basePath}
+			src={data.src}
+			opening={data.opening}
+			end={data.end}
+		/>
+	{/key}
 </div>
 
 <Footer />

@@ -7,14 +7,12 @@
 	import SettingsIcon from '@iconify-svelte/material-symbols/settings-rounded';
 	import FullscreenIcon from '@iconify-svelte/material-symbols/fullscreen-rounded';
 	import FullscreenExitIcon from '@iconify-svelte/material-symbols/fullscreen-exit-rounded';
+	import VolumeUpIcon from '@iconify-svelte/material-symbols/volume-up-rounded';
+	import VolumeOffIcon from '@iconify-svelte/material-symbols/volume-off-rounded';
 
-	const DEFAULT_SRC =
-		'http://localhost:5173/s3/1/hls/master.m3u8';
+	const DEFAULT_SRC = 'http://localhost:5173/s3/1/hls/master.m3u8';
+	const DEFAULT_POSTER = 'http://localhost:5173/s3/1/hls/preview.webp';
 
-	const DEFAULT_POSTER =
-		'http://localhost:5173/s3/1/hls/preview.webp';
-
-	// дискретные скорости и метки для ползунка
 	const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 	const SPEED_MIN = SPEED_STEPS[0];
 	const SPEED_MAX = SPEED_STEPS[SPEED_STEPS.length - 1];
@@ -23,11 +21,17 @@
 	let {
 		src = DEFAULT_SRC,
 		poster = DEFAULT_POSTER,
-		autoHideMs = 5000
+		autoHideMs = 5000,
+		opening = null,
+		end = null,
+		onNext = undefined
 	} = $props<{
 		src?: string;
 		poster?: string;
 		autoHideMs?: number;
+		opening?: number | null;
+		end?: number | null;
+		onNext?: () => void;
 	}>();
 
 	let playerEl: HTMLDivElement | null = null;
@@ -41,9 +45,12 @@
 
 	let speed = $state(1);
 
-	let qualities = $state<{ index: number; label: string; bitrate: number }[]>([]);
+	let qualities = $state<{ index: number; label: string; bitrate: number; height?: number }[]>([]);
 	let quality = $state<'auto' | number>('auto');
 	let currentQualityIndex = $state<number | null>(null);
+
+	let audioTracks = $state<{ index: number; label: string }[]>([]);
+	let audioTrack = $state<number | null>(null);
 
 	let showSettings = $state(false);
 	let initialOverlay = $state(true);
@@ -67,24 +74,105 @@
 
 	let speedActive = $state(false);
 
-	let currentQualityLabel = $derived.by(() => {
+	let volume = $state(1);
+	let muted = $state(false);
+	let showVolumeSlider = $state(false);
+	let volumeHoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	let isScrubbing = $state(false);
+
+	let removeConnectionListener: (() => void) | null = null;
+
+	let netDownlink = $state<number | null>(null);
+	let lastAutoCap: number | null = null;
+
+	const currentQualityLabel = $derived.by(() => {
 		if (!qualities.length) {
 			return quality === 'auto' ? 'Auto' : String(quality);
 		}
 
 		if (typeof quality === 'number') {
-			return (
-				qualities.find((q) => q.index === quality)?.label ??
-				`Level ${quality}`
-			);
+			const q = qualities.find((q) => q.index === quality);
+			if (q) {
+				const bitrateLabel = `${Math.round(q.bitrate / 1000)} kbps`;
+				return q.height ? `${q.height}p • ${bitrateLabel}` : bitrateLabel;
+			}
+			return `Level ${quality}`;
 		}
 
 		if (currentQualityIndex != null) {
 			const level = qualities.find((q) => q.index === currentQualityIndex);
-			if (level) return `Auto • ${level.label}`;
+			if (level) {
+				const bitrateLabel = `${Math.round(level.bitrate / 1000)} kbps`;
+				return level.height
+					? `Auto • ${level.height}p • ${bitrateLabel}`
+					: `Auto • ${bitrateLabel}`;
+			}
 		}
 		return 'Auto';
 	});
+
+	const currentAudioLabel = $derived.by(() => {
+		if (!audioTracks.length) return '—';
+		const idx = audioTrack ?? 0;
+		return audioTracks.find((t) => t.index === idx)?.label ?? 'Дорожка';
+	});
+
+	const netSpeedLabel = $derived.by(() => {
+		if (netDownlink == null) return 'Сеть: неизвестно';
+		return `Сеть: ~${netDownlink.toFixed(1)} Мбит/с`;
+	});
+
+	const showSkipOpening = $derived(opening != null && opening > 0 && current < opening);
+	const showNextButton = $derived(end != null && end > 0 && current >= end);
+
+	const progressPercent = $derived(!duration ? 0 : Math.min(100, (current / duration) * 100));
+	const bufferPercent = $derived(!duration ? 0 : Math.min(100, (buffered / duration) * 100));
+
+	const showLoadingOverlay = $derived(
+		!initialOverlay && ((isBuffering && !isScrubbing) || errorMessage)
+	);
+
+	function minMbpsForLevel(q: { height?: number; bitrate: number }) {
+		if (!q.height) return 1;
+
+		if (q.height >= 1080) return 8;
+		if (q.height >= 720) return 3.5;
+		if (q.height >= 480) return 2;
+		return 1;
+	}
+
+	function updateQualityByNetwork() {
+		if (!hls || !qualities.length) return;
+		if (netDownlink == null || netDownlink <= 0) return;
+		if (quality !== 'auto') return;
+
+		let candidates = qualities.filter((q) => netDownlink >= minMbpsForLevel(q));
+
+		console.log(candidates);
+
+		if (!candidates.length) {
+			let lowest = qualities[0];
+			for (const q of qualities) {
+				if (q.bitrate < lowest.bitrate) lowest = q;
+			}
+			candidates = [lowest];
+		}
+
+		let best = candidates[0];
+		for (const c of candidates) {
+			if (c.bitrate > best.bitrate) best = c;
+		}
+
+		if (lastAutoCap === best.index) return;
+
+		(hls as any).autoLevelCapping = best.index;
+		lastAutoCap = best.index;
+	}
+
+	function applyInitialQualityCap() {
+		updateQualityByNetwork();
+	}
 
 	function initHls() {
 		if (!videoEl) return;
@@ -93,8 +181,7 @@
 			hls = new Hls({
 				enableWorker: true,
 				lowLatencyMode: true,
-				startLevel: -1,
-				capLevelToPlayerSize: true
+				startLevel: -1
 			});
 			hls.loadSource(src);
 			hls.attachMedia(videoEl);
@@ -102,44 +189,139 @@
 			hls.on(Hls.Events.MANIFEST_PARSED, (_, data: any) => {
 				qualities = data.levels.map((l: any, i: number) => ({
 					index: i,
-					label: l.height
-						? `${l.height}p`
-						: `${Math.round(l.bitrate / 1000)} kbps`,
-					bitrate: l.bitrate
+					label: l.height ? `${l.height}p` : `${Math.round(l.bitrate / 1000)} kbps`,
+					bitrate: l.bitrate,
+					height: l.height
 				}));
 
 				quality = 'auto';
-				hls!.autoLevelEnabled = true;
 				currentQualityIndex = null;
+				lastAutoCap = null;
+
+				applyInitialQualityCap();
 			});
 
-			hls.on(Hls.Events.LEVEL_SWITCHED, (_, data: any) => {
-				currentQualityIndex = typeof data.level === 'number' ? data.level : null;
+			hls.on(Hls.Events.LEVEL_SWITCHED, (_: any, data: any) => {
+				currentQualityIndex =
+					typeof data.level === 'number' ? data.level : currentQualityIndex;
 			});
 
 			hls.on(Hls.Events.LEVEL_LOADED, () => {
 				isBuffering = false;
 			});
 
-			hls.on(Hls.Events.ERROR, (_, data: any) => {
-				isBuffering = true;
+			hls.on((Hls as any).Events.AUDIO_TRACKS_UPDATED, (_: any, data: any) => {
+				const tracks: any[] = data.audioTracks ?? data ?? [];
+				audioTracks = tracks.map((t, i) => ({
+					index: i,
+					label: t.name || t.lang || `Дорожка ${i + 1}`
+				}));
+
+				if (typeof (hls as any).audioTrack === 'number') {
+					audioTrack = (hls as any).audioTrack;
+				} else {
+					audioTrack = 0;
+					(hls as any).audioTrack = 0;
+				}
+			});
+
+			hls.on((Hls as any).Events.AUDIO_TRACK_SWITCHED, (_: any, data: any) => {
+				const idx =
+					typeof data.id === 'number'
+						? data.id
+						: typeof data.audioTrack === 'number'
+							? data.audioTrack
+							: null;
+				if (idx != null) audioTrack = idx;
+			});
+
+			hls.on(Hls.Events.FRAG_LOADED, (_: any, data: any) => {
+				let mbps: number | null = null;
+
+				if (hls) {
+					const bw = (hls as any).bandwidthEstimate;
+					if (typeof bw === 'number' && bw > 0) {
+						mbps = bw / 1_000_000;
+					}
+				}
+
+				if (mbps == null || mbps <= 0) {
+					const stats = data?.stats;
+					if (stats) {
+						const loaded = stats.loaded ?? stats.total;
+						const tStart = stats.tfirst ?? stats.trequest;
+						const tEnd = stats.tload ?? stats.tbuffered;
+
+						if (
+							typeof loaded === 'number' &&
+							loaded > 0 &&
+							typeof tStart === 'number' &&
+							typeof tEnd === 'number' &&
+							tEnd > tStart
+						) {
+							const timeMs = tEnd - tStart;
+							const bitsPerSecond = (loaded * 8 * 1000) / timeMs;
+							mbps = bitsPerSecond / 1_000_000;
+						}
+					}
+				}
+
+				if (mbps != null && mbps > 0) {
+					const alpha = 0.2;
+					netDownlink =
+						netDownlink == null ? mbps : netDownlink * (1 - alpha) + mbps * alpha;
+
+					updateQualityByNetwork();
+
+					const currentLevel =
+						hls && typeof hls.currentLevel === 'number' ? hls.currentLevel : null;
+
+					const autoCap =
+						hls && (hls as any).autoLevelCapping != null
+							? (hls as any).autoLevelCapping
+							: null;
+
+					const pickedBitrate =
+						currentLevel != null &&
+						currentLevel >= 0 &&
+						currentLevel < qualities.length
+							? qualities[currentLevel].bitrate
+							: null;
+
+					console.log('[HLS speed/quality]', {
+						netDownlink,
+						hlsCurrentLevel: currentLevel,
+						autoLevelCapping: autoCap,
+						pickedLevel: currentLevel,
+						pickedBitrate
+					});
+				}
+			});
+
+			hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+				if (data.details === 'bufferStalledError') {
+					isBuffering = true;
+				}
 
 				if (data.fatal) {
 					switch (data.type) {
 						case Hls.ErrorTypes.NETWORK_ERROR:
 							hls?.startLoad();
+							isBuffering = true;
 							break;
 						case Hls.ErrorTypes.MEDIA_ERROR:
 							hls?.recoverMediaError();
+							isBuffering = true;
 							break;
 						default:
 							errorMessage = 'Не удалось загрузить видео.';
 							hls?.destroy();
 							hls = null;
+							isBuffering = false;
 					}
 				}
 			});
-		} else {
+		} else if (videoEl) {
 			videoEl.src = src;
 		}
 	}
@@ -161,6 +343,9 @@
 
 		initHls();
 
+		videoEl.volume = volume;
+		videoEl.muted = muted;
+
 		videoEl.addEventListener('loadedmetadata', () => {
 			duration = videoEl?.duration || 0;
 		});
@@ -169,20 +354,37 @@
 			current = videoEl?.currentTime || 0;
 			const b = videoEl?.buffered;
 			if (b && b.length > 0) buffered = b.end(b.length - 1);
+
+			if (videoEl && videoEl.readyState >= 3) {
+				isBuffering = false;
+			}
 		});
 
 		videoEl.addEventListener('play', () => {
 			playing = true;
 			isBuffering = false;
 		});
-		videoEl.addEventListener('pause', () => (playing = false));
+		videoEl.addEventListener('pause', () => {
+			playing = false;
+			isBuffering = false;
+		});
 
-		videoEl.addEventListener('waiting', () => (isBuffering = true));
+		videoEl.addEventListener('waiting', () => {
+			if (!isScrubbing) isBuffering = true;
+		});
 		videoEl.addEventListener('canplay', () => (isBuffering = false));
 		videoEl.addEventListener('canplaythrough', () => (isBuffering = false));
-		videoEl.addEventListener('seeking', () => (isBuffering = true));
-		videoEl.addEventListener('seeked', () => (isBuffering = false));
-		videoEl.addEventListener('stalled', () => (isBuffering = true));
+		videoEl.addEventListener('seeking', () => {
+			if (!isScrubbing) isBuffering = true;
+		});
+		videoEl.addEventListener('seeked', () => {
+			if (videoEl.readyState >= 2) {
+				isBuffering = false;
+			}
+		});
+		videoEl.addEventListener('stalled', () => {
+			if (!isScrubbing) isBuffering = true;
+		});
 		videoEl.addEventListener('error', () => {
 			isBuffering = false;
 			if (!errorMessage) {
@@ -191,7 +393,6 @@
 		});
 
 		if (typeof document !== 'undefined') {
-			// следим за фуллскрином
 			const fullscreenHandler = () => {
 				if (!playerEl) {
 					isFullscreen = !!document.fullscreenElement;
@@ -201,7 +402,6 @@
 			};
 			document.addEventListener('fullscreenchange', fullscreenHandler);
 
-			// горячие клавиши
 			const keyHandler = (event: KeyboardEvent) => {
 				const target = event.target as HTMLElement | null;
 				if (
@@ -215,7 +415,6 @@
 				const key = event.key;
 				const lower = key.toLowerCase();
 
-				// F / А — фуллскрин + закрыть настройки
 				if (lower === 'f' || lower === 'а') {
 					event.preventDefault();
 					showSettings = false;
@@ -223,7 +422,6 @@
 					return;
 				}
 
-				// стрелки — +/- 10 сек
 				if (key === 'ArrowRight' || key === 'ArrowLeft') {
 					if (!videoEl || !isFinite(videoEl.duration)) return;
 					event.preventDefault();
@@ -242,7 +440,6 @@
 
 			document.addEventListener('keydown', keyHandler);
 
-			// клик вне плеера — закрыть настройки
 			const outsideClickHandler = (event: MouseEvent) => {
 				if (!showSettings) return;
 				if (!playerEl) return;
@@ -285,16 +482,27 @@
 		hls?.destroy();
 		removeFullscreenListener?.();
 		removeActivityListeners?.();
+		removeConnectionListener?.();
 		if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
 		if (singleTapTimeout) clearTimeout(singleTapTimeout);
 		if (seekTimeout) clearTimeout(seekTimeout);
+		if (volumeHoverTimeout) clearTimeout(volumeHoverTimeout);
 	});
 
 	function scheduleHideControls() {
 		if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
 		if (!playing || initialOverlay) return;
+
 		hideControlsTimeout = setTimeout(() => {
 			controlsVisible = false;
+			showSettings = false;
+
+			if (typeof document !== 'undefined') {
+				const active = document.activeElement as HTMLElement | null;
+				if (active && typeof active.blur === 'function') {
+					active.blur();
+				}
+			}
 		}, autoHideMs);
 	}
 
@@ -316,6 +524,12 @@
 		}
 	});
 
+	$effect(() => {
+		if (!videoEl) return;
+		videoEl.volume = volume;
+		videoEl.muted = muted || volume === 0;
+	});
+
 	function toggle() {
 		if (!videoEl) return;
 		if (videoEl.paused) {
@@ -326,7 +540,8 @@
 	}
 
 	function seek(v: number) {
-		if (videoEl) videoEl.currentTime = v;
+		if (!videoEl) return;
+		videoEl.currentTime = v;
 	}
 
 	function tap(e: MouseEvent) {
@@ -376,14 +591,24 @@
 		if (v === 'auto') {
 			quality = 'auto';
 			hls.currentLevel = -1;
-			hls.autoLevelEnabled = true;
+			currentQualityIndex = null;
+			lastAutoCap = null;
+			updateQualityByNetwork();
 		} else {
 			const idx = Number(v);
+			if (Number.isNaN(idx)) return;
 			quality = idx;
 			hls.currentLevel = idx;
-			hls.autoLevelEnabled = false;
 			currentQualityIndex = idx;
 		}
+	}
+
+	function changeAudioTrack(v: string) {
+		if (!hls) return;
+		const idx = Number(v);
+		if (Number.isNaN(idx)) return;
+		audioTrack = idx;
+		(hls as any).audioTrack = idx;
 	}
 
 	function t(sec: number) {
@@ -411,7 +636,6 @@
 		if (typeof document === 'undefined') return;
 		if (!playerEl) return;
 
-		// при входе/выходе из фуллскрина закрываем настройки
 		showSettings = false;
 
 		if (document.fullscreenElement === playerEl) {
@@ -423,12 +647,41 @@
 		}
 	}
 
-	const progressPercent = $derived(
-		!duration ? 0 : Math.min(100, (current / duration) * 100)
-	);
-	const bufferPercent = $derived(
-		!duration ? 0 : Math.min(100, (buffered / duration) * 100)
-	);
+	function skipOpening() {
+		if (!videoEl || opening == null || !(opening > 0)) return;
+		videoEl.currentTime = opening;
+	}
+
+	function nextEpisode() {
+		if (typeof onNext === 'function') {
+			onNext();
+		}
+	}
+
+	function toggleMute() {
+		muted = !muted;
+	}
+
+	function onVolumeEnter() {
+		if (volumeHoverTimeout) clearTimeout(volumeHoverTimeout);
+		volumeHoverTimeout = setTimeout(() => {
+			showVolumeSlider = true;
+		}, 200);
+	}
+
+	function onVolumeLeave() {
+		if (volumeHoverTimeout) clearTimeout(volumeHoverTimeout);
+		volumeHoverTimeout = setTimeout(() => {
+			showVolumeSlider = false;
+		}, 200);
+	}
+
+	function setScrubbing(v: boolean) {
+		isScrubbing = v;
+		if (v) {
+			isBuffering = false;
+		}
+	}
 </script>
 
 <div
@@ -441,12 +694,7 @@
 		poster={poster}
 		class="video w-full h-full object-cover"
 	>
-		<track
-			kind="captions"
-			label="English"
-			srclang="en"
-			src="/captions/example.vtt"
-		/>
+		<track kind="captions" label="No captions" srclang="en" src="data:," />
 	</video>
 
 	<button
@@ -485,7 +733,27 @@
 		</button>
 	{/if}
 
-	{#if !initialOverlay && (isBuffering || errorMessage)}
+	{#if !initialOverlay && showSkipOpening}
+		<button
+			type="button"
+			class="skip-opening-btn"
+			onclick={skipOpening}
+		>
+			Пропустить опенинг
+		</button>
+	{/if}
+
+	{#if !initialOverlay && showNextButton && typeof onNext === 'function'}
+		<button
+			type="button"
+			class="next-episode-btn"
+			onclick={nextEpisode}
+		>
+			Следующая серия
+		</button>
+	{/if}
+
+	{#if showLoadingOverlay}
 		<div class="loading-overlay">
 			{#if isBuffering && !errorMessage}
 				<div class="spinner"></div>
@@ -521,6 +789,43 @@
 					{/if}
 				</button>
 
+				<div
+					class="volume-control"
+					role="group"
+					aria-label="Управление громкостью"
+					onmouseenter={onVolumeEnter}
+					onmouseleave={onVolumeLeave}
+				>
+					<button
+						type="button"
+						class="btn volume-btn"
+						onclick={toggleMute}
+						aria-label={muted || volume === 0 ? 'Включить звук' : 'Выключить звук'}
+					>
+						{#if muted || volume === 0}
+							<VolumeOffIcon class="w-5 h-5" />
+						{:else}
+							<VolumeUpIcon class="w-5 h-5" />
+						{/if}
+					</button>
+
+					<div class="volume-slider-wrapper" class:open={showVolumeSlider}>
+						<input
+							type="range"
+							min="0"
+							max="100"
+							step="1"
+							value={Math.round(volume * 100)}
+							oninput={(e) => {
+								const v = Number((e.currentTarget as HTMLInputElement).value) / 100;
+								volume = v;
+								if (v > 0) muted = false;
+							}}
+							aria-label="Громкость"
+						/>
+					</div>
+				</div>
+
 				<div class="time">{t(current)}</div>
 
 				<div class="progress-wrapper">
@@ -534,6 +839,11 @@
 						max={duration}
 						step="0.1"
 						value={current}
+						onpointerdown={() => setScrubbing(true)}
+						onpointerup={() => setScrubbing(false)}
+						onmouseleave={() => setScrubbing(false)}
+						ontouchstart={() => setScrubbing(true)}
+						ontouchend={() => setScrubbing(false)}
 						oninput={(e) =>
 							seek(Number((e.target as HTMLInputElement).value))}
 						aria-label="Seek"
@@ -569,7 +879,7 @@
 				</button>
 			</div>
 
-			<div class="settings-popover {showSettings ? 'open' : ''}">
+			<div class="settings-popover" class:open={showSettings}>
 				<div class="block">
 					<div class="label-row">
 						<div>Speed</div>
@@ -622,14 +932,41 @@
 						class="quality-select"
 						aria-label="Video quality"
 					>
-						<option value="auto">Auto</option>
+						<option value="auto">Auto (рекомендуется)</option>
 						{#each qualities as q}
 							<option value={q.index}>
-								{q.label}
+								{q.height
+									? `${q.height}p • ${Math.round(q.bitrate / 1000)} kbps`
+									: `${Math.round(q.bitrate / 1000)} kbps`}
 							</option>
 						{/each}
 					</select>
+
+					<small class="net-info">{netSpeedLabel}</small>
 				</div>
+
+				{#if audioTracks.length}
+					<div class="block">
+						<div class="label-row">
+							<div>Озвучка</div>
+							<div>{currentAudioLabel}</div>
+						</div>
+
+						<select
+							class="quality-select"
+							value={audioTrack ?? 0}
+							onchange={(e) =>
+								changeAudioTrack((e.target as HTMLSelectElement).value)}
+							aria-label="Audio track"
+						>
+							{#each audioTracks as track}
+								<option value={track.index}>
+									{track.label}
+								</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -669,7 +1006,7 @@
 
 	.row {
 		display: grid;
-		grid-template-columns: auto auto 1fr auto auto auto;
+		grid-template-columns: auto auto auto 1fr auto auto auto;
 		gap: 10px;
 		align-items: center;
 	}
@@ -697,6 +1034,83 @@
 		background: var(--color-fuchsia-500);
 		transform: translateY(-1px);
 		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+	}
+
+	.volume-control {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		position: relative;
+	}
+
+	.volume-btn {
+		flex-shrink: 0;
+	}
+
+	.volume-slider-wrapper {
+		position: absolute;
+		bottom: 140%;
+		left: 50%;
+		transform: translate(-50%, 6px) scale(0.9);
+		transform-origin: center bottom;
+		width: 120px;
+		padding: 4px 8px;
+		border-radius: 999px;
+		background: color-mix(in oklab, var(--color-gray-700) 75%, black 25%);
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			opacity 0.18s ease,
+			transform 0.18s ease;
+		z-index: 3;
+	}
+
+	.volume-slider-wrapper.open {
+		opacity: 1;
+		transform: translate(-50%, 0) scale(1);
+		pointer-events: auto;
+	}
+
+	.volume-slider-wrapper input[type='range'] {
+		width: 100%;
+		-webkit-appearance: none;
+		appearance: none;
+		background: none;
+		cursor: pointer;
+	}
+
+	.volume-slider-wrapper input[type='range']::-webkit-slider-runnable-track {
+		height: 4px;
+		background: color-mix(in oklab, var(--color-gray-500) 40%, black 60%);
+		border-radius: 999px;
+	}
+
+	.volume-slider-wrapper input[type='range']::-moz-range-track {
+		height: 4px;
+		background: color-mix(in oklab, var(--color-gray-500) 40%, black 60%);
+		border-radius: 999px;
+	}
+
+	.volume-slider-wrapper input[type='range']::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--color-fuchsia-400);
+		box-shadow: 0 0 0 5px rgba(244, 114, 182, 0.35);
+		margin-top: -4px;
+	}
+
+	.volume-slider-wrapper input[type='range']::-moz-range-thumb {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--color-fuchsia-400);
+		border: none;
+		box-shadow: 0 0 0 5px rgba(244, 114, 182, 0.35);
 	}
 
 	.progress-wrapper {
@@ -917,8 +1331,6 @@
 		color: var(--color-purple-200);
 	}
 
-	/* === СКОРОСТЬ: линейка только пока actively меняем === */
-
 	.speed-slider {
 		position: relative;
 		width: 100%;
@@ -974,7 +1386,6 @@
 		transition: opacity 0.25s ease;
 	}
 
-	/* Активный режим — когда юзер двигает ползунок */
 	.speed-slider.speed-active .speed-track-base {
 		opacity: 0;
 	}
@@ -1039,6 +1450,13 @@
 		border: 1px solid var(--color-fuchsia-500);
 	}
 
+	.net-info {
+		margin-top: 3px;
+		font-size: 11px;
+		color: var(--color-purple-300);
+		opacity: 0.85;
+	}
+
 	.settings-backdrop {
 		position: absolute;
 		inset: 0;
@@ -1084,5 +1502,41 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	.skip-opening-btn {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		z-index: 4;
+		padding: 6px 12px;
+		border-radius: 999px;
+		border: none;
+		font-size: 13px;
+		font-weight: 600;
+		color: #f9fafb;
+		background: rgba(15, 23, 42, 0.85);
+		cursor: pointer;
+		backdrop-filter: blur(6px);
+	}
+
+	.next-episode-btn {
+		position: absolute;
+		right: 16px;
+		bottom: 80px;
+		z-index: 4;
+		padding: 8px 16px;
+		border-radius: 999px;
+		border: none;
+		font-size: 14px;
+		font-weight: 700;
+		color: #f9fafb;
+		background: linear-gradient(
+			90deg,
+			var(--color-violet-500),
+			var(--color-fuchsia-500)
+		);
+		cursor: pointer;
+		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
 	}
 </style>

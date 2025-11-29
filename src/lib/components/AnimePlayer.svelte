@@ -9,6 +9,8 @@
 		basePath?: string;
 		src?: string;
 		poster?: string;
+		opening?: number | null;
+		end?: number | null;
 	}
 
 	let {
@@ -17,7 +19,9 @@
 		episodesTotal = 1,
 		basePath = '/anime/example',
 		src,
-		poster
+		poster,
+		opening = null,
+		end = null
 	}: Props = $props();
 
 	let prevUrl = $derived.by(() =>
@@ -30,6 +34,10 @@
 
 	function go(url: string | null) {
 		if (url) goto(url);
+	}
+
+	function goNextFromPlayer() {
+		go(nextUrl);
 	}
 </script>
 
@@ -51,7 +59,7 @@
 	</div>
 
 	<div class="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
-		<HlsVideoPlayer {src} {poster} />
+		<HlsVideoPlayer {src} {poster} {opening} {end} onNext={goNextFromPlayer} />
 	</div>
 
 	<div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
