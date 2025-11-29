@@ -295,7 +295,6 @@
 				{ name: 'series', label: 'Серия', type: 'number' },
 				{ name: 'path', label: 'Путь к файлу', type: 'text' },
 				{ name: 'opening', label: 'Опенинг (сек.)', type: 'number', nullable: true },
-				{ name: 'ending', label: 'Эндинг (сек.)', type: 'number', nullable: true },
 				{ name: 'end', label: 'Конец (сек.)', type: 'number', nullable: true },
 				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
 				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
