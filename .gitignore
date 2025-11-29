@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 .idea
 
 static/s3
+
+.vscode

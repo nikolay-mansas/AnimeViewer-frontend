@@ -27,3 +27,11 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Sitemap and Robots
+
+For generate sitemap and robots files need run command:
+
+```sh
+npx ts-node _sitemap.ts
+```
