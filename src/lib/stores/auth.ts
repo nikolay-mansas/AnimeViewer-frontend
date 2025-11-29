@@ -9,13 +9,20 @@ const defaultState: AuthState = {
 	token: null
 };
 
+function getCookieToken() {
+	if (!browser) return null;
+	const row = document.cookie.split('; ').find((row) => row.startsWith('auth_token='));
+	return row ? decodeURIComponent(row.split('=')[1]) : null;
+}
+
 function createAuthStore() {
 	let initial = defaultState;
 
 	if (browser) {
-		const raw = localStorage.getItem('auth_token');
+		const rawCookie = getCookieToken();
+		const rawLocal = localStorage.getItem('auth_token');
 		initial = {
-			token: raw ? raw : null
+			token: rawCookie ?? rawLocal ?? null
 		};
 	}
 
@@ -25,8 +32,12 @@ function createAuthStore() {
 		subscribe((value) => {
 			if (value.token) {
 				localStorage.setItem('auth_token', value.token);
+				document.cookie = `auth_token=${encodeURIComponent(
+					value.token
+				)}; Path=/; SameSite=Lax`;
 			} else {
 				localStorage.removeItem('auth_token');
+				document.cookie = 'auth_token=; Max-Age=0; Path=/; SameSite=Lax';
 			}
 		});
 	}
@@ -38,16 +49,20 @@ function createAuthStore() {
 		},
 		logout() {
 			set(defaultState);
-			if (browser) localStorage.removeItem('auth_token');
+			if (browser) {
+				localStorage.removeItem('auth_token');
+				document.cookie = 'auth_token=; Max-Age=0; Path=/; SameSite=Lax';
+			}
 		},
 		hasToken(): boolean {
 			if (!browser) return false;
-			const raw = localStorage.getItem('auth_token');
+			const raw = getCookieToken() ?? localStorage.getItem('auth_token');
 			return !!raw;
 		},
 		getToken(): string | null {
-			return localStorage.getItem('auth_token');
-		},
+			if (!browser) return null;
+			return getCookieToken() ?? localStorage.getItem('auth_token');
+		}
 	};
 }
 

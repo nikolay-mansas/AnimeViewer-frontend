@@ -1,6 +1,10 @@
+<!-- +page.svelte -->
 <script lang="ts">
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import { PUBLIC_API_URL } from '$env/static/public';
+	import { auth } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox';
 	type EntityKey = 'anime' | 'genre' | 'anime_title' | 'watcher' | 'account' | 'anime_video';
@@ -324,6 +328,17 @@
 	let editingItem = $state<Item | null>(null);
 	let isNew = $state(false);
 
+	async function authorizedFetch(url: string, init: RequestInit = {}) {
+		const token = auth.getToken();
+		const headers = new Headers(init.headers ?? {});
+		if (token) headers.set('Authorization', `Bearer ${token}`);
+		const res = await fetch(url, { ...init, headers });
+		if ((res.status === 401 || res.status === 403) && browser) {
+			goto('/');
+		}
+		return res;
+	}
+
 	function getConfig(): EntityConfig {
 		return entityConfigs[activeEntity];
 	}
@@ -410,7 +425,9 @@
 				}
 			}
 
-			const res = await fetch(PUBLIC_API_URL + config.endpoints.list + '?' + params.toString());
+			const res = await authorizedFetch(
+				PUBLIC_API_URL + config.endpoints.list + '?' + params.toString()
+			);
 			const json = await res.json();
 			const data = (json.result ?? json.items ?? json) as Item[];
 
@@ -450,7 +467,7 @@
 				method = 'PUT';
 			}
 
-			const res = await fetch(PUBLIC_API_URL + path, {
+			const res = await authorizedFetch(PUBLIC_API_URL + path, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(editingItem)
@@ -478,7 +495,7 @@
 
 		try {
 			const path = buildEndpoint(config.endpoints.delete, { gid });
-			await fetch(PUBLIC_API_URL + path, {
+			await authorizedFetch(PUBLIC_API_URL + path, {
 				method: 'DELETE'
 			});
 			editingItem = null;
