@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { PUBLIC_API_URL } from '$env/static/public';
 	import { onMount, onDestroy } from 'svelte';
+	import { auth } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
 	import Hls from 'hls.js';
 
 	import PlayIcon from '@iconify-svelte/material-symbols/play-arrow-rounded';
@@ -24,7 +27,9 @@
 		autoHideMs = 5000,
 		opening = null,
 		end = null,
-		onNext = undefined
+		onNext = undefined,
+		animeGid,
+		series
 	} = $props<{
 		src?: string;
 		poster?: string;
@@ -32,6 +37,8 @@
 		opening?: number | null;
 		end?: number | null;
 		onNext?: () => void;
+		animeGid: string;
+		series: number;
 	}>();
 
 	let playerEl: HTMLDivElement | null = null;
@@ -86,6 +93,14 @@
 	let netDownlink = $state<number | null>(null);
 	let lastAutoCap: number | null = null;
 
+	let watchEnabled = $state(false);
+	let watcherGid = $state<string | null>(null);
+	let viewingSeconds = $state(0);
+	let lastSentAt = $state(0);
+	let watchInterval: ReturnType<typeof setInterval> | null = null;
+
+	let resumeFrom = $state<number | null>(null);
+
 	const currentQualityLabel = $derived.by(() => {
 		if (!qualities.length) {
 			return quality === 'auto' ? 'Auto' : String(quality);
@@ -136,6 +151,198 @@
 	const showLoadingOverlay = $derived(
 		!initialOverlay && ((isBuffering && !isScrubbing) || errorMessage)
 	);
+
+	async function loadWatcherProgress() {
+		if (!animeGid || !Number.isFinite(series)) return;
+
+		const token = auth.getToken();
+		if (!token) {
+			watchEnabled = false;
+			return;
+		}
+
+		try {
+			const url = PUBLIC_API_URL + `/api/v2/watcher/?anime_gid=${encodeURIComponent(
+				animeGid
+			)}&series=${encodeURIComponent(String(series))}`;
+
+			const res = await fetch(url, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			});
+
+			if (res.status === 401 || res.status === 403) {
+				handleAuthError();
+				return;
+			}
+
+			if (res.status === 404) {
+				watcherGid = null;
+				return;
+			}
+
+			if (!res.ok) {
+				console.error('Failed to load watcher', res.status);
+				return;
+			}
+
+			const data = await res.json();
+
+			watcherGid = data.gid ?? null;
+
+			if (typeof data.timecode === 'number' && data.timecode > 0) {
+				resumeFrom = data.timecode;
+			}
+
+			const savedTeam = data.acting_team as string | undefined;
+			if (savedTeam && audioTracks.length && hls) {
+				const found = audioTracks.find((t) => t.label === savedTeam);
+				if (found) {
+					audioTrack = found.index;
+					(hls as any).audioTrack = found.index;
+				}
+			}
+		} catch (e) {
+			console.error('Error loading watcher', e);
+		}
+	}
+
+	function getCurrentActingTeam(): string {
+		if (!audioTracks.length || audioTrack == null) return 'default';
+
+		const track = audioTracks.find((t) => t.index === audioTrack);
+		return track?.label ?? 'default';
+	}
+
+	function handleAuthError() {
+		watchEnabled = false;
+		auth.logout();
+		goto('/login');
+	}
+
+		function startWatchTimer() {
+		if (watchInterval) return;
+
+		watchInterval = setInterval(() => {
+			if (!watchEnabled || !videoEl) return;
+			if (videoEl.paused || videoEl.ended) return;
+
+			viewingSeconds += 1;
+			checkWatcherTick();
+		}, 1000);
+	}
+
+	function stopWatchTimer() {
+		if (watchInterval) {
+			clearInterval(watchInterval);
+			watchInterval = null;
+		}
+	}
+
+	function computeWatcherPayload() {
+		if (!videoEl) return null;
+
+		const timecode = Math.floor(videoEl.currentTime || 0);
+
+		const total = videoEl.duration || 0;
+		const percentage = total > 0 ? Math.round((timecode / total) * 100) : 0;
+
+		const viewedBoundary =
+			end && end > 0
+				? end - 10
+				: videoEl.duration
+					? videoEl.duration - 10
+					: Infinity;
+
+		const viewed = timecode >= viewedBoundary;
+
+		return {
+			timecode,
+			percentage,
+			viewed,
+			acting_team: getCurrentActingTeam()
+		};
+	}
+
+	async function checkWatcherTick() {
+		if (viewingSeconds < 10) return;
+
+		if (viewingSeconds - lastSentAt < 10) return;
+
+		const token = auth.getToken();
+		if (!token) {
+			watchEnabled = false;
+			return;
+		}
+
+		const payload = computeWatcherPayload();
+		if (!payload) return;
+
+		lastSentAt = viewingSeconds;
+
+		try {
+			if (!watcherGid) {
+				const res = await fetch(PUBLIC_API_URL + '/api/v2/watcher/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`
+					},
+					body: JSON.stringify({
+						anime_gid: animeGid,
+						acting_team: payload.acting_team,
+						series,
+						timecode: payload.timecode,
+						viewed: payload.viewed,
+						percentage: payload.percentage
+					})
+				});
+
+				if (res.status === 401 || res.status === 403) {
+					handleAuthError();
+					return;
+				}
+
+				if (!res.ok) {
+					console.error('Failed to create watcher', res.status);
+					return;
+				}
+
+				const data = await res.json();
+				watcherGid = data.gid ?? watcherGid;
+			} else {
+				const res = await fetch(PUBLIC_API_URL + `/api/v2/watcher/${watcherGid}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`
+					},
+					body: JSON.stringify({
+						anime_gid: animeGid,
+						acting_team: payload.acting_team,
+						series,
+						timecode: payload.timecode,
+						viewed: payload.viewed,
+						percentage: payload.percentage
+					})
+				});
+
+				if (res.status === 401 || res.status === 403) {
+					handleAuthError();
+					return;
+				}
+
+				if (!res.ok) {
+					console.error('Failed to update watcher', res.status);
+					return;
+				}
+			}
+		} catch (e) {
+			console.error('Failed to send watcher progress', e);
+		}
+	}
 
 	function minMbpsForLevel(q: { height?: number; bitrate: number }) {
 		if (!q.height) return 1;
@@ -347,11 +554,31 @@
 
 		initHls();
 
+		if (auth.hasToken()) {
+			watchEnabled = true;
+			loadWatcherProgress();
+			startWatchTimer();
+		}
+
 		videoEl.volume = volume;
 		videoEl.muted = muted;
 
 		videoEl.addEventListener('loadedmetadata', () => {
 			duration = videoEl?.duration || 0;
+
+			if (resumeFrom != null && videoEl) {
+				const d = videoEl.duration || 0;
+				const target =
+					d && resumeFrom > 0 && resumeFrom < d - 1 ? resumeFrom : resumeFrom;
+
+				try {
+					videoEl.currentTime = target;
+					current = target;
+				} catch {
+				}
+
+				resumeFrom = null;
+			}
 		});
 
 		videoEl.addEventListener('timeupdate', () => {
@@ -491,6 +718,8 @@
 		if (singleTapTimeout) clearTimeout(singleTapTimeout);
 		if (seekTimeout) clearTimeout(seekTimeout);
 		if (volumeHoverTimeout) clearTimeout(volumeHoverTimeout);
+
+		stopWatchTimer();
 	});
 
 	function scheduleHideControls() {

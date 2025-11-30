@@ -58,6 +58,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	}
 
 	return {
+		animeId,
 		title: anime.title,
 		episode,
 		episodesTotal,

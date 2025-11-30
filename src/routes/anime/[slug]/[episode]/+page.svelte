@@ -3,11 +3,12 @@
 	import Footer from '$lib/components/Footer.svelte';
 
 	interface PageData {
+		animeId: string;
 		title: string;
 		episode: number;
 		episodesTotal: number;
 		basePath: string;
-		src?: string;
+		src: string;
 		opening?: number | null;
 		end?: number | null;
 	}
@@ -22,6 +23,7 @@
 <div class="container mx-auto max-w-5xl px-4 py-6">
 	{#key data.episode}
 		<AnimePlayer
+			animeGid={data.animeId}
 			title={data.title}
 			episode={data.episode}
 			episodesTotal={data.episodesTotal}
