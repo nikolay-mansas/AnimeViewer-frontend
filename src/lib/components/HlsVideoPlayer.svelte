@@ -123,8 +123,12 @@
 		return `Сеть: ~${netDownlink.toFixed(1)} Мбит/с`;
 	});
 
-	const showSkipOpening = $derived(opening != null && opening > 0 && current < opening);
-	const showNextButton = $derived(end != null && end > 0 && current >= end);
+	const showSkipOpening = $derived(
+		opening != null && opening > 0 && current >= opening && current < opening + 15
+	);
+	const showNextButton = $derived(
+		end != null && end > 0 && current >= end && current < end + 15
+	);
 
 	const progressPercent = $derived(!duration ? 0 : Math.min(100, (current / duration) * 100));
 	const bufferPercent = $derived(!duration ? 0 : Math.min(100, (buffered / duration) * 100));
@@ -739,7 +743,7 @@
 			class="skip-opening-btn"
 			onclick={skipOpening}
 		>
-			Пропустить опенинг
+			Пропустить заставку
 		</button>
 	{/if}
 
@@ -1504,39 +1508,37 @@
 		}
 	}
 
+	.next-episode-btn,
 	.skip-opening-btn {
 		position: absolute;
-		top: 16px;
-		right: 16px;
-		z-index: 4;
-		padding: 6px 12px;
-		border-radius: 999px;
-		border: none;
-		font-size: 13px;
-		font-weight: 600;
-		color: #f9fafb;
-		background: rgba(15, 23, 42, 0.85);
-		cursor: pointer;
-		backdrop-filter: blur(6px);
-	}
-
-	.next-episode-btn {
-		position: absolute;
-		right: 16px;
 		bottom: 80px;
 		z-index: 4;
+
 		padding: 8px 16px;
 		border-radius: 999px;
 		border: none;
+
 		font-size: 14px;
 		font-weight: 700;
+		line-height: 1;
+		white-space: nowrap;
+
 		color: #f9fafb;
 		background: linear-gradient(
 			90deg,
 			var(--color-violet-500),
 			var(--color-fuchsia-500)
 		);
+
 		cursor: pointer;
 		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+	}
+
+	.next-episode-btn {
+		right: 16px;
+	}
+
+	.skip-opening-btn {
+		left: 16px;
 	}
 </style>
