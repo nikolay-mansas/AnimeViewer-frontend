@@ -9,7 +9,8 @@
 		episodesTotal: number;
 		basePath: string;
 		src: string;
-		opening?: number | null;
+		opening_start?: number | null;
+		opening_end?: number | null;
 		end?: number | null;
 	}
 
@@ -29,7 +30,8 @@
 			episodesTotal={data.episodesTotal}
 			basePath={data.basePath}
 			src={data.src}
-			opening={data.opening}
+			opening_start={data.opening_start}
+			opening_end={data.opening_end}
 			end={data.end}
 		/>
 	{/key}

@@ -25,7 +25,8 @@
 		src = DEFAULT_SRC,
 		poster = DEFAULT_POSTER,
 		autoHideMs = 5000,
-		opening = null,
+		opening_start = null,
+		opening_end = null,
 		end = null,
 		onNext = undefined,
 		animeGid,
@@ -34,7 +35,8 @@
 		src?: string;
 		poster?: string;
 		autoHideMs?: number;
-		opening?: number | null;
+		opening_start?: number | null;
+		opening_end?: number | null;
 		end?: number | null;
 		onNext?: () => void;
 		animeGid: string;
@@ -139,7 +141,7 @@
 	});
 
 	const showSkipOpening = $derived(
-		opening != null && opening > 0 && current >= opening && current < opening + 15
+		opening_start != null && opening_start > 0 && current >= opening_start && current < opening_start + 15
 	);
 	const showNextButton = $derived(
 		end != null && end > 0 && current >= end && current < end + 15
@@ -881,8 +883,8 @@
 	}
 
 	function skipOpening() {
-		if (!videoEl || opening == null || !(opening > 0)) return;
-		videoEl.currentTime = opening;
+		if (!videoEl || opening_start == null || !(opening_start > 0)) return;
+		videoEl.currentTime = opening_end;
 	}
 
 	function nextEpisode() {

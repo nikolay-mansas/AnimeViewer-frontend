@@ -10,7 +10,8 @@
 		basePath: string;
 		src: string;
 		poster?: string;
-		opening?: number | null;
+		opening_start?: number | null;
+		opening_end?: number | null;
 		end?: number | null;
 	}
 
@@ -22,7 +23,8 @@
 		basePath = '/anime/example',
 		src,
 		poster,
-		opening = null,
+		opening_start = null,
+		opening_end = null,
 		end = null
 	}: Props = $props();
 
@@ -66,7 +68,8 @@
 			series={episode}
 			{src}
 			{poster}
-			{opening}
+			{opening_start}
+			{opening_end}
 			{end}
 			onNext={goNextFromPlayer}
 		/>

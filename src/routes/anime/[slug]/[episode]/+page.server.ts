@@ -13,7 +13,8 @@ type VideoMeta = {
 	anime_gid: string;
 	series: number;
 	path: string;
-	opening: number | null;
+	opening_start: number | null;
+	opening_end: number | null;
 	end: number | null;
 	created_at: string;
 	updated_at: string;
@@ -41,7 +42,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	const episodesTotal = anime.number_episodes;
 
 	let src: string | undefined;
-	let opening: number | null = null;
+	let opening_start: number | null = null;
+	let opening_end: number | null = null;
 	let end: number | null = null;
 
 	const videoRes = await fetch(
@@ -53,7 +55,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		const path = video.path;
 
 		src = path;
-		opening = video.opening ?? null;
+		opening_start = video.opening_start ?? null;
+		opening_end = video.opening_end ?? null;
 		end = video.end ?? null;
 	}
 
@@ -64,7 +67,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		episodesTotal,
 		basePath: `/anime/${slug}`,
 		src,
-		opening,
+		opening_start,
+		opening_end,
 		end
 	};
 };
