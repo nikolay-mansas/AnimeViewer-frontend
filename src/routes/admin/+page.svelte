@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 
-	type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox';
+	type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'password';
 	type EntityKey = 'anime' | 'genre' | 'anime_title' | 'watcher' | 'account' | 'anime_video';
 
 	interface Option {
@@ -243,6 +243,7 @@
 				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
 				{ name: 'username', label: 'Логин', type: 'text' },
 				{ name: 'email', label: 'Email', type: 'text' },
+				{ name: 'password', label: 'Пароль', type: 'password' },
 				{ name: 'disabled', label: 'Отключён', type: 'checkbox' },
 				{ name: 'is_email_verified', label: 'Email подтверждён', type: 'checkbox' },
 				{ name: 'is_admin', label: 'Админ', type: 'checkbox' },
@@ -328,6 +329,8 @@
 	let editingItem = $state<Item | null>(null);
 	let isNew = $state(false);
 
+	let passwordLocked = $state(true);
+
 	async function authorizedFetch(url: string, init: RequestInit = {}) {
 		const token = auth.getToken();
 		const headers = new Headers(init.headers ?? {});
@@ -395,6 +398,7 @@
 		total = 0;
 		editingItem = null;
 		isNew = false;
+		passwordLocked = true;
 
 		const cfg = entityConfigs[entityKey];
 		searchField = cfg.searchFields[0]?.value ?? '';
@@ -443,11 +447,21 @@
 	function openNew() {
 		editingItem = createEmptyFor(activeEntity);
 		isNew = true;
+
+		if (activeEntity === 'account') {
+			passwordLocked = false;
+			(editingItem as Item).password = '';
+		}
 	}
 
 	function openExisting(item: Item) {
 		editingItem = cloneItem(item);
 		isNew = false;
+
+		if (activeEntity === 'account') {
+			passwordLocked = true;
+			(editingItem as Item).password = null;
+		}
 	}
 
 	async function saveCurrent() {
@@ -467,10 +481,18 @@
 				method = 'PUT';
 			}
 
+			const payload = cloneItem(editingItem);
+
+			if (config.key === 'account') {
+				if (!isNew && passwordLocked) {
+					(payload as Item).password = null;
+				}
+			}
+
 			const res = await authorizedFetch(PUBLIC_API_URL + path, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(editingItem)
+				body: JSON.stringify(payload)
 			});
 
 			const json = await res.json();
@@ -850,6 +872,7 @@
 												)}
 											readonly={field.readOnly}
 										></textarea>
+
 									{:else if field.type === 'select'}
 										<select
 											id={`${getConfig().key}-${field.name}`}
@@ -869,6 +892,41 @@
 												</option>
 											{/each}
 										</select>
+
+									{:else if field.type === 'password' && activeEntity === 'account'}
+										<div class="flex gap-2 items-center">
+											<input
+												id={`${getConfig().key}-${field.name}`}
+												class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+												type="password"
+												value={passwordLocked ? '********' : (editingItem[field.name] ?? '')}
+												oninput={(e) => {
+													if (!passwordLocked) {
+														updateField(field, (e.target as HTMLInputElement).value);
+													}
+												}}
+												readonly={field.readOnly || passwordLocked}
+											/>
+
+											{#if !isNew}
+												<button
+													type="button"
+													class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10 whitespace-nowrap"
+													onclick={() => {
+														if (passwordLocked) {
+															passwordLocked = false;
+															if (editingItem) editingItem[field.name] = '';
+														} else {
+															passwordLocked = true;
+															if (editingItem) editingItem[field.name] = null;
+														}
+													}}
+												>
+													{passwordLocked ? 'Разблокировать' : 'Не менять пароль'}
+												</button>
+											{/if}
+										</div>
+
 									{:else}
 										<input
 											id={`${getConfig().key}-${field.name}`}
