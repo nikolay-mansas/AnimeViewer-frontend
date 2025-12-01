@@ -280,7 +280,7 @@
 			label: 'Видео',
 			endpoints: {
 				list: '/api/v2/video/list',
-				create: '/api/v2/video',
+				create: '/api/v2/video/',
 				update: '/api/v2/video/{gid}',
 				delete: '/api/v2/video/{gid}'
 			},
@@ -294,7 +294,8 @@
 				{ name: 'anime_gid', label: 'Аниме GID', type: 'text' },
 				{ name: 'series', label: 'Серия', type: 'number' },
 				{ name: 'path', label: 'Путь к файлу', type: 'text' },
-				{ name: 'opening', label: 'Опенинг (сек.)', type: 'number', nullable: true },
+				{ name: 'opening_start', label: 'Начало заставки (сек.)', type: 'number', nullable: true },
+				{ name: 'opening_end', label: 'Конец заставки (сек.)', type: 'number', nullable: true },
 				{ name: 'end', label: 'Конец (сек.)', type: 'number', nullable: true },
 				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
 				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
