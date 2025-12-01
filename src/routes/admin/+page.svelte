@@ -197,7 +197,7 @@
 			label: 'История просмотров',
 			endpoints: {
 				list: '/api/v2/watcher/list',
-				create: '/api/v2/watcher',
+				create: '/api/v2/watcher/',
 				update: '/api/v2/watcher/{gid}',
 				delete: '/api/v2/watcher/{gid}'
 			},
@@ -214,6 +214,7 @@
 				{ name: 'account_gid', label: 'Аккаунт GID', type: 'text' },
 				{ name: 'series', label: 'Серия', type: 'number' },
 				{ name: 'timecode', label: 'Таймкод (сек.)', type: 'number' },
+				{ name: 'acting_team', label: 'Студия озвучки', type: 'text' },
 				{ name: 'viewed', label: 'Просмотрено', type: 'checkbox' },
 				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
 				{ name: 'updated_at', label: 'Обновлено', type: 'text', readOnly: true }
