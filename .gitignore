@@ -27,3 +27,7 @@ vite.config.ts.timestamp-*
 static/s3
 
 .vscode
+
+robots.txt
+sitemap.xml
+sitemap-*.xml

@@ -3,19 +3,23 @@
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import { clampText } from '$lib/seo';
 
 	import { PUBLIC_API_URL } from '$env/static/public';
 
 	let { data } = $props();
 	const { animes: initialAnimes, total: initialTotal, page: initialPage, pageSize, text: initialText } = data;
 
-	let animes = $state(initialAnimes.map((item: any) => ({
-		id: item.gid,
-		title: item.title,
-		episodes: item.episodes,
-		img: item.img,
-		href: `/anime/${item.href}`
-	})));
+	let animes = $state(
+		initialAnimes.map((item: any) => ({
+			id: item.gid,
+			title: item.title,
+			episodes: item.episodes,
+			img: item.img,
+			href: `/anime/${item.href}`
+		}))
+	);
 
 	let total = $state(initialTotal);
 	let page = $state(initialPage);
@@ -46,11 +50,33 @@
 		text = query;
 		await fetchAnimes(query, 1);
 	}
+
+	const pageTitle = $derived.by(() => {
+		const q = text.trim();
+		if (!q) return 'Смотреть аниме онлайн — каталог · AnimeViewer';
+		return `Смотреть «${q}» — поиск аниме · AnimeViewer`;
+	});
+
+	const pageDesc = $derived.by(() => {
+		const q = text.trim();
+		if (!q) return clampText('Каталог аниме: выбирайте тайтл, открывайте профиль и начинайте просмотр.', 180);
+		return clampText(`Поиск по запросу «${q}». Найдите нужное аниме и откройте страницу тайтла для просмотра.`, 180);
+	});
+
+	const ld = $derived.by(() => ({
+		'@context': 'https://schema.org',
+		'@type': 'WebSite',
+		name: 'AnimeViewer',
+		url: 'https://animeviewer.ru/',
+		potentialAction: {
+			'@type': 'SearchAction',
+			target: 'https://animeviewer.ru/?text={search_term_string}',
+			'query-input': 'required name=search_term_string'
+		}
+	}));
 </script>
 
-<svelte:head>
-	<title>Каталог аниме – AnimeViewer</title>
-</svelte:head>
+<Seo title={pageTitle} description={pageDesc} type="website" jsonLd={ld} />
 
 <div class="max-w-screen-xl mx-auto px-4 pt-10 space-y-6">
 	<h1 class="text-3xl font-bold">Каталог аниме</h1>

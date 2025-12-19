@@ -21,6 +21,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<meta name="application-name" content="AnimeViewer" />
 </svelte:head>
 
 <AuthNotice />

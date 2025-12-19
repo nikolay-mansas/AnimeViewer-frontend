@@ -1,6 +1,6 @@
-<!-- +page.svelte -->
 <script lang="ts">
 	import SearchBar from '$lib/components/SearchBar.svelte';
+	import Seo from '$lib/components/Seo.svelte';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { auth } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
@@ -99,9 +99,9 @@
 			label: 'Аниме',
 			endpoints: {
 				list: '/api/v2/anime/list',
-				create: '/api/v2/anime/list',
-				update: '/api/v2/anime/list/{gid}',
-				delete: '/api/v2/anime/list/{gid}'
+				create: '/api/v2/anime/create',
+				update: '/api/v2/anime/{gid}',
+				delete: '/api/v2/anime/{gid}'
 			},
 			primaryField: 'title',
 			columns: [
@@ -623,9 +623,11 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Админ-панель – AnimeViewer</title>
-</svelte:head>
+<Seo
+	title="Админ-панель – AnimeViewer"
+	description="Внутренняя панель управления."
+	noindex={true}
+/>
 
 <div class="max-w-screen-2xl mx-auto px-4 pt-8 pb-10 space-y-6">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

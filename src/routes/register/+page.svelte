@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Input from '$lib/components/Input.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import Seo from '$lib/components/Seo.svelte';
 	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { auth } from '$lib/stores/auth';
@@ -139,9 +140,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Регистрация – AnimeViewer</title>
-</svelte:head>
+<Seo title="Регистрация – AnimeViewer" description="Создание аккаунта в AnimeViewer." noindex={true} />
 
 <section class="max-w-screen-sm mx-auto px-4 py-10">
 	<div class="bg-[#0f0d19] border border-violet-300/20 rounded-2xl px-5 py-7 sm:px-8 sm:py-9 shadow-[0_0_28px_rgba(139,109,232,0.22)]">
