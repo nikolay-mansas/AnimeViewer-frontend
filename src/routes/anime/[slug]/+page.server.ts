@@ -30,14 +30,12 @@ type AnimeApiResponse = {
 	titles: AnimeTitle[];
 };
 
-type EpisodesWatched = Record<number, { progress: number, viewed: boolean }>;
+type EpisodesWatched = Record<number, { progress: number; viewed: boolean }>;
 
 export const load: PageServerLoad = async ({ params, fetch }) => {
 	const slug = params.slug;
 
-	const animeRes = await fetch(
-		`${PRIVATE_API_URL}/api/v2/anime/?u=${encodeURIComponent(slug)}`
-	);
+	const animeRes = await fetch(`${PRIVATE_API_URL}/api/v2/anime/?u=${encodeURIComponent(slug)}`);
 
 	if (!animeRes.ok) {
 		if (animeRes.status === 404) {
@@ -60,9 +58,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		? anime.preview_path
 		: `${PRIVATE_API_URL}${anime.preview_path}`;
 
-	const genres: string[] = (anime.genres ?? []).map((g) =>
-		typeof g === 'string' ? g : g.name
-	);
+	const genres: string[] = (anime.genres ?? []).map((g) => (typeof g === 'string' ? g : g.name));
 
 	const episodesWatched: EpisodesWatched = {};
 

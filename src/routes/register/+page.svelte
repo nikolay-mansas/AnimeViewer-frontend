@@ -57,26 +57,20 @@
 		return null;
 	}
 
-	const emailError = $derived(
-		email === '' && !submitted ? null : getEmailError(email)
-	);
-	const usernameError = $derived(
-		username === '' && !submitted ? null : getUsernameError(username)
-	);
-	const passwordError = $derived(
-		password === '' && !submitted ? null : getPasswordError(password)
-	);
+	const emailError = $derived(email === '' && !submitted ? null : getEmailError(email));
+	const usernameError = $derived(username === '' && !submitted ? null : getUsernameError(username));
+	const passwordError = $derived(password === '' && !submitted ? null : getPasswordError(password));
 	const passwordRepeatError = $derived(
 		passwordRepeat === '' && !submitted ? null : getPasswordRepeatError(password, passwordRepeat)
 	);
 
 	const canSubmit = $derived(
 		!loading &&
-		!!turnstileToken &&
-		!getEmailError(email) &&
-		!getUsernameError(username) &&
-		!getPasswordError(password) &&
-		!getPasswordRepeatError(password, passwordRepeat)
+			!!turnstileToken &&
+			!getEmailError(email) &&
+			!getUsernameError(username) &&
+			!getPasswordError(password) &&
+			!getPasswordRepeatError(password, passwordRepeat)
 	);
 
 	$effect(() => {
@@ -150,21 +144,29 @@
 	}
 </script>
 
-<Seo title="Регистрация – AnimeViewer" description="Создание аккаунта в AnimeViewer." noindex={true} />
+<Seo
+	title="Регистрация – AnimeViewer"
+	description="Создание аккаунта в AnimeViewer."
+	noindex={true}
+/>
 
-<section class="max-w-screen-sm mx-auto px-4 py-10">
-	<div class="bg-[#0f0d19] border border-violet-300/20 rounded-2xl px-5 py-7 sm:px-8 sm:py-9 shadow-[0_0_28px_rgba(139,109,232,0.22)]">
-		<h1 class="text-2xl sm:text-3xl font-bold mb-6">Регистрация</h1>
+<section class="mx-auto max-w-screen-sm px-4 py-10">
+	<div
+		class="rounded-2xl border border-violet-300/20 bg-[#0f0d19] px-5 py-7 shadow-[0_0_28px_rgba(139,109,232,0.22)] sm:px-8 sm:py-9"
+	>
+		<h1 class="mb-6 text-2xl font-bold sm:text-3xl">Регистрация</h1>
 
 		{#if error}
-			<div class="mb-4 text-sm text-red-300 bg-red-500/10 border border-red-500/40 rounded-lg px-3 py-2">
+			<div
+				class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+			>
 				{error}
 			</div>
 		{/if}
 
 		<form class="space-y-4" onsubmit={handleSubmit}>
 			<div class="space-y-1.5">
-				<label for="email" class="text-xs uppercase tracking-wide text-white/60">Email</label>
+				<label for="email" class="text-xs tracking-wide text-white/60 uppercase">Email</label>
 				<Input
 					type="email"
 					placeholder="you@example.com"
@@ -173,12 +175,12 @@
 					ariaLabel="Email"
 				/>
 				{#if emailError}
-					<p class="text-xs text-red-300 mt-1">{emailError}</p>
+					<p class="mt-1 text-xs text-red-300">{emailError}</p>
 				{/if}
 			</div>
 
 			<div class="space-y-1.5">
-				<label for="username" class="text-xs uppercase tracking-wide text-white/60">Никнейм</label>
+				<label for="username" class="text-xs tracking-wide text-white/60 uppercase">Никнейм</label>
 				<Input
 					type="text"
 					placeholder="Kira"
@@ -187,12 +189,12 @@
 					ariaLabel="Никнейм"
 				/>
 				{#if usernameError}
-					<p class="text-xs text-red-300 mt-1">{usernameError}</p>
+					<p class="mt-1 text-xs text-red-300">{usernameError}</p>
 				{/if}
 			</div>
 
 			<div class="space-y-1.5">
-				<label for="password" class="text-xs uppercase tracking-wide text-white/60">Пароль</label>
+				<label for="password" class="text-xs tracking-wide text-white/60 uppercase">Пароль</label>
 				<Input
 					type="password"
 					placeholder="Минимум 8 символов"
@@ -201,12 +203,14 @@
 					ariaLabel="Пароль"
 				/>
 				{#if passwordError}
-					<p class="text-xs text-red-300 mt-1">{passwordError}</p>
+					<p class="mt-1 text-xs text-red-300">{passwordError}</p>
 				{/if}
 			</div>
 
 			<div class="space-y-1.5">
-				<label for="passwordRepeat" class="text-xs uppercase tracking-wide text-white/60">Повтор пароля</label>
+				<label for="passwordRepeat" class="text-xs tracking-wide text-white/60 uppercase"
+					>Повтор пароля</label
+				>
 				<Input
 					type="password"
 					placeholder="Повторите пароль"
@@ -216,11 +220,11 @@
 				/>
 
 				{#if passwordRepeatError}
-					<p class="text-xs text-red-300 mt-1">{passwordRepeatError}</p>
+					<p class="mt-1 text-xs text-red-300">{passwordRepeatError}</p>
 				{/if}
 			</div>
 
-			<div class="pt-2 flex justify-center">
+			<div class="flex justify-center pt-2">
 				<div class="w-fit">
 					<Turnstile
 						bind:this={turnstileRef}
@@ -232,12 +236,12 @@
 			</div>
 
 			{#if submitted && !turnstileToken}
-				<p class="text-xs text-red-300 mt-2 text-center">Подтвердите, что вы не бот.</p>
+				<p class="mt-2 text-center text-xs text-red-300">Подтвердите, что вы не бот.</p>
 			{/if}
 
 			<button
 				type="submit"
-				class="btn-custom w-full justify-center mt-2 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+				class="btn-custom mt-2 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
 				disabled={!canSubmit}
 			>
 				{#if loading}
@@ -248,9 +252,9 @@
 			</button>
 		</form>
 
-		<p class="mt-6 text-xs sm:text-sm text-white/60 text-center">
+		<p class="mt-6 text-center text-xs text-white/60 sm:text-sm">
 			Уже есть аккаунт?
-			<a href="/login" class="text-fuchsia-400 hover:text-fuchsia-300 font-medium">Войти</a>
+			<a href="/login" class="font-medium text-fuchsia-400 hover:text-fuchsia-300">Войти</a>
 		</p>
 	</div>
 </section>

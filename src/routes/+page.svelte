@@ -9,7 +9,13 @@
 	import { PUBLIC_API_URL } from '$env/static/public';
 
 	let { data } = $props();
-	const { animes: initialAnimes, total: initialTotal, page: initialPage, pageSize, text: initialText } = data;
+	const {
+		animes: initialAnimes,
+		total: initialTotal,
+		page: initialPage,
+		pageSize,
+		text: initialText
+	} = data;
 
 	let animes = $state(
 		initialAnimes.map((item: any) => ({
@@ -59,8 +65,15 @@
 
 	const pageDesc = $derived.by(() => {
 		const q = text.trim();
-		if (!q) return clampText('Каталог аниме: выбирайте тайтл, открывайте профиль и начинайте просмотр.', 180);
-		return clampText(`Поиск по запросу «${q}». Найдите нужное аниме и откройте страницу тайтла для просмотра.`, 180);
+		if (!q)
+			return clampText(
+				'Каталог аниме: выбирайте тайтл, открывайте профиль и начинайте просмотр.',
+				180
+			);
+		return clampText(
+			`Поиск по запросу «${q}». Найдите нужное аниме и откройте страницу тайтла для просмотра.`,
+			180
+		);
 	});
 
 	const ld = $derived.by(() => ({
@@ -78,7 +91,7 @@
 
 <Seo title={pageTitle} description={pageDesc} type="website" jsonLd={ld} />
 
-<div class="max-w-screen-xl mx-auto px-4 pt-10 space-y-6">
+<div class="mx-auto max-w-screen-xl space-y-6 px-4 pt-10">
 	<h1 class="text-3xl font-bold">Каталог аниме</h1>
 
 	<SearchBar bind:q={text} onSearch={handleSearch} />

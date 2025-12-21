@@ -4,7 +4,6 @@ Used: svelte + tailwindcss
 
 ![Preview](/docs/1.png)
 
-
 ## Developing
 
 Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:

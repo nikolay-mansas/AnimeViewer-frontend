@@ -11,18 +11,20 @@
 	});
 </script>
 
-<a href={href} class="block h-full">
+<a {href} class="block h-full">
 	<div
 		bind:this={cardEl}
-		class="relative h-full bg-[#1e1e2e] rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform grid grid-rows-[auto,1fr]"
+		class="relative grid h-full grid-rows-[auto,1fr] overflow-hidden rounded-lg bg-[#1e1e2e] shadow-lg transition-transform hover:scale-105"
 	>
-		<div class="w-full aspect-[2/3]">
-			<img src={img} alt={title} class="block w-full h-full object-cover" />
+		<div class="aspect-[2/3] w-full">
+			<img src={img} alt={title} class="block h-full w-full object-cover" />
 		</div>
 
-		<div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">{episodes}</div>
+		<div class="absolute top-2 right-2 rounded bg-black/70 px-2 py-1 text-xs text-white">
+			{episodes}
+		</div>
 
-		<div bind:this={titleEl} class="p-3 text-sm leading-snug break-words min-h-0">
+		<div bind:this={titleEl} class="min-h-0 p-3 text-sm leading-snug break-words">
 			{title}
 		</div>
 	</div>

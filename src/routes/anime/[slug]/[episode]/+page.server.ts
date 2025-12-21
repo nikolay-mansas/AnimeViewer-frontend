@@ -24,9 +24,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	const slug = params.slug;
 	const episode = Number(params.episode ?? 1);
 
-	const animeRes = await fetch(
-		`${PRIVATE_API_URL}/api/v2/anime/?u=${encodeURIComponent(slug)}`
-	);
+	const animeRes = await fetch(`${PRIVATE_API_URL}/api/v2/anime/?u=${encodeURIComponent(slug)}`);
 
 	if (!animeRes.ok) {
 		if (animeRes.status === 404) {
@@ -46,9 +44,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	let opening_end: number | null = null;
 	let end: number | null = null;
 
-	const videoRes = await fetch(
-		`${PRIVATE_API_URL}/api/v2/video/anime/${animeId}/${episode}`
-	);
+	const videoRes = await fetch(`${PRIVATE_API_URL}/api/v2/video/anime/${animeId}/${episode}`);
 
 	if (videoRes.ok) {
 		const video = (await videoRes.json()) as VideoMeta;

@@ -468,7 +468,9 @@
 				if (value !== '') params.set(key, value);
 			}
 
-			const res = await authorizedFetch(PUBLIC_API_URL + config.endpoints.list + '?' + params.toString());
+			const res = await authorizedFetch(
+				PUBLIC_API_URL + config.endpoints.list + '?' + params.toString()
+			);
 			const json = await res.json();
 			const data = (json.result ?? json.items ?? json) as Item[];
 
@@ -715,7 +717,12 @@
 		});
 
 		if (isCreate) payload.titles = deduped.map((t) => ({ language: t.language, name: t.name }));
-		else payload.titles = deduped.map((t) => ({ gid: t.gid ?? null, language: t.language, name: t.name }));
+		else
+			payload.titles = deduped.map((t) => ({
+				gid: t.gid ?? null,
+				language: t.language,
+				name: t.name
+			}));
 
 		return payload;
 	}
@@ -810,22 +817,28 @@
 	});
 </script>
 
-<Seo title="Админ-панель – AnimeViewer" description="Внутренняя панель управления." noindex={true} />
+<Seo
+	title="Админ-панель – AnimeViewer"
+	description="Внутренняя панель управления."
+	noindex={true}
+/>
 
-<div class="max-w-screen-2xl mx-auto px-4 pt-8 pb-10 space-y-6">
+<div class="mx-auto max-w-screen-2xl space-y-6 px-4 pt-8 pb-10">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">Админ-панель</h1>
-			<p class="text-sm text-white/60 mt-1">Управление аниме, жанрами, пользователями, историей и видео.</p>
+			<p class="mt-1 text-sm text-white/60">
+				Управление аниме, жанрами, пользователями, историей и видео.
+			</p>
 		</div>
 
-		<div class="flex flex-wrap gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
+		<div class="flex flex-wrap gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-1">
 			{#each Object.values(entityConfigs) as cfg}
 				<button
-					class={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+					class={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
 						activeEntity === cfg.key
 							? 'bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-md shadow-fuchsia-500/30'
-							: 'text-white/70 hover:text-white hover:bg-white/10'
+							: 'text-white/70 hover:bg-white/10 hover:text-white'
 					}`}
 					onclick={() => selectEntity(cfg.key)}
 				>
@@ -835,20 +848,20 @@
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-6 items-start">
+	<div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
 		<section
-			class="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] via-white/[0.03] to-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_45px_rgба(0,0,0,0.6)] p-4 sm:p-5"
+			class="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] via-white/[0.03] to-white/[0.02] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_45px_rgба(0,0,0,0.6)] sm:p-5"
 		>
-			<div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-				<div class="flex-1 min-w-0 space-y-2">
-					<div class="flex gap-2 items-stretch">
-						<div class="flex-1 min-w-0">
+			<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+				<div class="min-w-0 flex-1 space-y-2">
+					<div class="flex items-stretch gap-2">
+						<div class="min-w-0 flex-1">
 							<SearchBar bind:q={searchInput} onSearch={handleSearch} />
 						</div>
 
 						{#if getConfig().searchFields.length > 0}
 							<select
-								class="w-40 bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+								class="w-40 rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-xs text-white/90 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 								value={searchField}
 								onchange={(e) => changeSearchField((e.target as HTMLSelectElement).value)}
 							>
@@ -865,9 +878,10 @@
 								<label class="flex items-center gap-1 text-white/70">
 									<span>{filter.label}:</span>
 									<select
-										class="bg-[#14101e] border border-white/10 rounded-full px-2 pr-7 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
+										class="rounded-full border border-white/10 bg-[#14101e] px-2 py-1 pr-7 text-xs text-white/90 focus:ring-1 focus:ring-fuchsia-500/60 focus:outline-none"
 										value={filterValues[filter.field] ?? ''}
-										onchange={(e) => updateFilter(filter.field, (e.target as HTMLSelectElement).value)}
+										onchange={(e) =>
+											updateFilter(filter.field, (e.target as HTMLSelectElement).value)}
 									>
 										<option value="">Все</option>
 										{#each filter.options as opt}
@@ -884,15 +898,17 @@
 			</div>
 
 			{#if listLoading}
-				<div class="py-10 text-center text-white/60 text-sm">Загрузка...</div>
+				<div class="py-10 text-center text-sm text-white/60">Загрузка...</div>
 			{:else if items.length === 0}
-				<div class="py-10 text-center text-white/60 text-sm">Ничего не найдено</div>
+				<div class="py-10 text-center text-sm text-white/60">Ничего не найдено</div>
 			{:else}
 				<div class="overflow-auto rounded-2xl border border-white/10 bg-black/20">
 					<table class="min-w-full text-sm">
-						<thead class="bg-white/5 text-[11px] uppercase tracking-wide text-white/60">
+						<thead class="bg-white/5 text-[11px] tracking-wide text-white/60 uppercase">
 							<tr>
-								<th class="px-3 py-2 text-left sticky left-0 z-10 bg-[#14101e]">{getConfig().label}</th>
+								<th class="sticky left-0 z-10 bg-[#14101e] px-3 py-2 text-left"
+									>{getConfig().label}</th
+								>
 								{#each getConfig().columns as col}
 									<th class="px-3 py-2 text-left whitespace-nowrap">{col.label}</th>
 								{/each}
@@ -900,12 +916,17 @@
 						</thead>
 						<tbody>
 							{#each items as item}
-								<tr class="border-t border-white/5 hover:bg-white/5 cursor-pointer" onclick={() => openExisting(item)}>
-									<td class="px-3 py-2 text-[13px] font-medium sticky left-0 bg-[#14101e]">
+								<tr
+									class="cursor-pointer border-t border-white/5 hover:bg-white/5"
+									onclick={() => openExisting(item)}
+								>
+									<td class="sticky left-0 bg-[#14101e] px-3 py-2 text-[13px] font-medium">
 										{item[getConfig().primaryField] ?? '—'}
 									</td>
 									{#each getConfig().columns as col}
-										<td class="px-3 py-2 text-[13px] text-white/80 align-top">{formatValue(item[col.key])}</td>
+										<td class="px-3 py-2 align-top text-[13px] text-white/80"
+											>{formatValue(item[col.key])}</td
+										>
 									{/each}
 								</tr>
 							{/each}
@@ -913,7 +934,9 @@
 					</table>
 				</div>
 
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-[12px] text-white/65">
+				<div
+					class="mt-4 flex flex-col gap-3 text-[12px] text-white/65 sm:flex-row sm:items-center sm:justify-between"
+				>
 					<div class="flex flex-wrap items-center gap-3">
 						<div>
 							Всего: <span class="font-semibold text-white/80">{total}</span>
@@ -921,7 +944,7 @@
 						<div class="flex items-center gap-2">
 							<span>На странице:</span>
 							<select
-								class="bg-[#14101e] border border-white/10 rounded-full px-2 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
+								class="rounded-full border border-white/10 bg-[#14101e] px-2 py-1 text-xs text-white/90 focus:ring-1 focus:ring-fuchsia-500/60 focus:outline-none"
 								value={String(pageSize)}
 								onchange={(e) => changePageSize((e.target as HTMLSelectElement).value)}
 							>
@@ -934,14 +957,14 @@
 
 					<div class="flex items-center gap-2">
 						<button
-							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							class="rounded-full bg-white/5 px-2.5 py-1 transition hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5"
 							onclick={goFirst}
 							disabled={page <= 1}
 						>
 							«
 						</button>
 						<button
-							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							class="rounded-full bg-white/5 px-2.5 py-1 transition hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5"
 							onclick={goPrev}
 							disabled={page <= 1}
 						>
@@ -949,14 +972,14 @@
 						</button>
 						<span>Стр. {page} из {totalPages}</span>
 						<button
-							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							class="rounded-full bg-white/5 px-2.5 py-1 transition hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5"
 							onclick={goNext}
 							disabled={page >= totalPages}
 						>
 							→
 						</button>
 						<button
-							class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition"
+							class="rounded-full bg-white/5 px-2.5 py-1 transition hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5"
 							onclick={goLast}
 							disabled={page >= totalPages}
 						>
@@ -968,21 +991,23 @@
 		</section>
 
 		<section
-			class="rounded-3xl border border-white/10 bg-[#0e0b17]/80 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_45px_rgba(0,0,0,0.6)] p-6 sm:p-7 min-h-[260px]"
+			class="min-h-[260px] rounded-3xl border border-white/10 bg-[#0e0b17]/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_45px_rgba(0,0,0,0.6)] backdrop-blur-sm sm:p-7"
 		>
 			{#if editingItem}
-				<div class="flex items-start justify-between gap-3 mb-4">
+				<div class="mb-4 flex items-start justify-between gap-3">
 					<div>
 						<h2 class="text-lg font-semibold">{isNew ? 'Новый объект' : 'Редактирование'}</h2>
-						<p class="text-xs text-white/60 mt-1">{getConfig().label}</p>
+						<p class="mt-1 text-xs text-white/60">{getConfig().label}</p>
 					</div>
-					<span class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-white/60">
+					<span
+						class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-[10px] tracking-wide text-white/60 uppercase"
+					>
 						{activeEntity}
 					</span>
 				</div>
 
 				<form
-					class="space-y-3 max-h-[520px] overflow-auto px-3 pb-4"
+					class="max-h-[520px] space-y-3 overflow-auto px-3 pb-4"
 					onsubmit={(e) => {
 						e.preventDefault();
 						saveCurrent();
@@ -1004,7 +1029,7 @@
 									</label>
 								{:else}
 									<label
-										class="block text-[11px] font-semibold uppercase tracking-wide text-white/55"
+										class="block text-[11px] font-semibold tracking-wide text-white/55 uppercase"
 										for={`${getConfig().key}-${field.name}`}
 									>
 										{field.label}
@@ -1013,7 +1038,7 @@
 									{#if field.type === 'textarea'}
 										<textarea
 											id={`${getConfig().key}-${field.name}`}
-											class="w-full resize-y min-h-[80px] bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											class="min-h-[80px] w-full resize-y rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 											value={editingItem[field.name] ?? ''}
 											oninput={(e) => updateField(field, (e.target as HTMLTextAreaElement).value)}
 											readonly={field.readOnly}
@@ -1021,7 +1046,7 @@
 									{:else if field.type === 'select'}
 										<select
 											id={`${getConfig().key}-${field.name}`}
-											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											class="w-full rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 											value={editingItem[field.name] ?? ''}
 											onchange={(e) => updateField(field, (e.target as HTMLSelectElement).value)}
 											disabled={field.readOnly}
@@ -1032,14 +1057,15 @@
 											{/each}
 										</select>
 									{:else if field.type === 'password' && activeEntity === 'account'}
-										<div class="flex gap-2 items-center">
+										<div class="flex items-center gap-2">
 											<input
 												id={`${getConfig().key}-${field.name}`}
-												class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+												class="w-full rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 												type="password"
 												value={passwordLocked ? '********' : (editingItem[field.name] ?? '')}
 												oninput={(e) => {
-													if (!passwordLocked) updateField(field, (e.target as HTMLInputElement).value);
+													if (!passwordLocked)
+														updateField(field, (e.target as HTMLInputElement).value);
 												}}
 												readonly={field.readOnly || passwordLocked}
 											/>
@@ -1047,7 +1073,7 @@
 											{#if !isNew}
 												<button
 													type="button"
-													class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10 whitespace-nowrap"
+													class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs whitespace-nowrap hover:bg-white/10"
 													onclick={() => {
 														if (passwordLocked) {
 															passwordLocked = false;
@@ -1065,7 +1091,7 @@
 									{:else}
 										<input
 											id={`${getConfig().key}-${field.name}`}
-											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+											class="w-full rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 											type={field.type === 'number' ? 'number' : 'text'}
 											value={editingItem[field.name] ?? ''}
 											oninput={(e) => updateField(field, (e.target as HTMLInputElement).value)}
@@ -1078,26 +1104,26 @@
 					{/each}
 
 					{#if activeEntity === 'anime'}
-						<div class="pt-2 space-y-2">
+						<div class="space-y-2 pt-2">
 							<div class="flex flex-col gap-2">
 								<button
 									type="button"
-									class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10 text-left"
+									class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm hover:bg-white/10"
 									onclick={openGenresDrawer}
 								>
 									Жанры:
-									<span class="text-white/80 font-semibold">
+									<span class="font-semibold text-white/80">
 										{getSelectedGenreIds().length}
 									</span>
 								</button>
 
 								<button
 									type="button"
-									class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10 text-left"
+									class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm hover:bg-white/10"
 									onclick={openTitlesDrawer}
 								>
 									Названия:
-									<span class="text-white/80 font-semibold">
+									<span class="font-semibold text-white/80">
 										{getTitleDrafts().filter((t) => String(t.name ?? '').trim().length > 0).length}
 									</span>
 								</button>
@@ -1105,7 +1131,9 @@
 								{#if getSelectedGenreIds().length > 0}
 									<div class="text-[12px] text-white/60">
 										{#each getSelectedGenreIds().slice(0, 6) as gid, i}
-											<span class="inline-flex items-center px-2 py-1 mr-1 mb-1 rounded-full bg-white/5 border border-white/10">
+											<span
+												class="mr-1 mb-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1"
+											>
 												{getGenreName(gid)}
 											</span>
 										{/each}
@@ -1119,12 +1147,16 @@
 					{/if}
 
 					<div class="flex flex-wrap items-center gap-3 pt-2">
-						<button type="submit" class="btn-custom disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
+						<button
+							type="submit"
+							class="btn-custom disabled:cursor-not-allowed disabled:opacity-50"
+							disabled={saving}
+						>
 							{saving ? 'Сохранение...' : 'Сохранить'}
 						</button>
 						<button
 							type="button"
-							class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10"
+							class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
 							onclick={() => {
 								editingItem = null;
 								isNew = false;
@@ -1138,7 +1170,7 @@
 						{#if !isNew}
 							<button
 								type="button"
-								class="ml-auto px-4 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-sm font-semibold disabled:opacity-50"
+								class="ml-auto rounded-xl bg-red-500/80 px-4 py-2 text-sm font-semibold hover:bg-red-500 disabled:opacity-50"
 								onclick={deleteCurrent}
 								disabled={saving}
 							>
@@ -1148,9 +1180,13 @@
 					</div>
 				</form>
 			{:else}
-				<div class="h-full flex flex-col items-center justify-center text-center text-white/60 px-4">
-					<p class="text-sm mb-3">Выберите объект из списка слева или создайте новый.</p>
-					<button class="btn-custom text-sm" onclick={openNew}>Добавить {getConfig().label.toLowerCase()}</button>
+				<div
+					class="flex h-full flex-col items-center justify-center px-4 text-center text-white/60"
+				>
+					<p class="mb-3 text-sm">Выберите объект из списка слева или создайте новый.</p>
+					<button class="btn-custom text-sm" onclick={openNew}
+						>Добавить {getConfig().label.toLowerCase()}</button
+					>
 				</div>
 			{/if}
 		</section>
@@ -1165,25 +1201,28 @@
 		></div>
 
 		<div
-			class={`absolute right-0 top-0 h-full w-[420px] max-w-[92vw] bg-[#0e0b17] border-l border-white/10 shadow-2xl transition-transform ${
+			class={`absolute top-0 right-0 h-full w-[420px] max-w-[92vw] border-l border-white/10 bg-[#0e0b17] shadow-2xl transition-transform ${
 				genreDrawerOpen ? 'translate-x-0' : 'translate-x-full'
 			}`}
 		>
-			<div class="p-4 border-b border-white/10 flex items-center gap-2">
+			<div class="flex items-center gap-2 border-b border-white/10 p-4">
 				<div class="flex-1">
 					<div class="text-sm font-semibold">Жанры</div>
 					<div class="text-[12px] text-white/60">
 						Выбрано: {getSelectedGenreIds().length}
 					</div>
 				</div>
-				<button class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10" onclick={closeGenresDrawer}>
+				<button
+					class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+					onclick={closeGenresDrawer}
+				>
 					Закрыть
 				</button>
 			</div>
 
-			<div class="p-4 space-y-3">
+			<div class="space-y-3 p-4">
 				<input
-					class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+					class="w-full rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 					placeholder="Поиск жанра..."
 					value={genreSearch}
 					oninput={(e) => (genreSearch = (e.target as HTMLInputElement).value)}
@@ -1192,9 +1231,13 @@
 				{#if genreListLoading}
 					<div class="text-sm text-white/60">Загрузка жанров...</div>
 				{:else}
-					<div class="max-h-[70vh] overflow-auto pr-1 space-y-1">
-						{#each allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.trim().toLowerCase())) as g (g.gid)}
-							<label class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/5 cursor-pointer">
+					<div class="max-h-[70vh] space-y-1 overflow-auto pr-1">
+						{#each allGenres.filter((g) => g.name
+								.toLowerCase()
+								.includes(genreSearch.trim().toLowerCase())) as g (g.gid)}
+							<label
+								class="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/5"
+							>
 								<input
 									type="checkbox"
 									class="rounded border-white/30 bg-[#14101e] text-fuchsia-500 focus:ring-fuchsia-500/60"
@@ -1218,39 +1261,43 @@
 		></div>
 
 		<div
-			class={`absolute right-0 top-0 h-full w-[520px] max-w-[95vw] bg-[#0e0b17] border-l border-white/10 shadow-2xl transition-transform ${
+			class={`absolute top-0 right-0 h-full w-[520px] max-w-[95vw] border-l border-white/10 bg-[#0e0b17] shadow-2xl transition-transform ${
 				titlesDrawerOpen ? 'translate-x-0' : 'translate-x-full'
 			}`}
 		>
-			<div class="p-4 border-b border-white/10 flex items-center gap-2">
+			<div class="flex items-center gap-2 border-b border-white/10 p-4">
 				<div class="flex-1">
 					<div class="text-sm font-semibold">Названия (AnimeTitle)</div>
 					<div class="text-[12px] text-white/60">
 						Здесь можно добавить новое или изменить существующее
 					</div>
 				</div>
-				<button class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10" onclick={closeTitlesDrawer}>
+				<button
+					class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+					onclick={closeTitlesDrawer}
+				>
 					Закрыть
 				</button>
 			</div>
 
-			<div class="p-4 space-y-3">
+			<div class="space-y-3 p-4">
 				<button
 					type="button"
-					class="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10"
+					class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
 					onclick={addTitleRow}
 				>
 					+ Добавить название
 				</button>
 
-				<div class="max-h-[72vh] overflow-auto pr-1 space-y-2">
+				<div class="max-h-[72vh] space-y-2 overflow-auto pr-1">
 					{#each getTitleDrafts() as t, idx (t.gid ?? `${t.language}-${idx}`)}
-						<div class="rounded-2xl border border-white/10 bg-black/20 p-3 space-y-2">
+						<div class="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
 							<div class="flex items-center gap-2">
 								<select
-									class="w-40 bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+									class="w-40 rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 									value={t.language}
-									onchange={(e) => updateTitleField(idx, 'language', (e.target as HTMLSelectElement).value)}
+									onchange={(e) =>
+										updateTitleField(idx, 'language', (e.target as HTMLSelectElement).value)}
 								>
 									{#each languageOptions as opt}
 										<option value={opt.value}>{opt.label}</option>
@@ -1259,7 +1306,7 @@
 
 								<button
 									type="button"
-									class="ml-auto px-3 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-xs font-semibold"
+									class="ml-auto rounded-xl bg-red-500/80 px-3 py-2 text-xs font-semibold hover:bg-red-500"
 									onclick={() => removeTitleRow(idx)}
 								>
 									Удалить
@@ -1267,7 +1314,7 @@
 							</div>
 
 							<input
-								class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+								class="w-full rounded-xl border border-white/10 bg-[#14101e] px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:ring-2 focus:ring-fuchsia-500/60 focus:outline-none"
 								placeholder="Название..."
 								value={t.name}
 								oninput={(e) => updateTitleField(idx, 'name', (e.target as HTMLInputElement).value)}

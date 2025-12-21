@@ -32,9 +32,7 @@ function createAuthStore() {
 		subscribe((value) => {
 			if (value.token) {
 				localStorage.setItem('auth_token', value.token);
-				document.cookie = `auth_token=${encodeURIComponent(
-					value.token
-				)}; Path=/; SameSite=Lax`;
+				document.cookie = `auth_token=${encodeURIComponent(value.token)}; Path=/; SameSite=Lax`;
 			} else {
 				localStorage.removeItem('auth_token');
 				document.cookie = 'auth_token=; Max-Age=0; Path=/; SameSite=Lax';

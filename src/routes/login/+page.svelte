@@ -37,18 +37,11 @@
 		return null;
 	}
 
-	const usernameError = $derived(
-		username === '' && !submitted ? null : getUsernameError(username)
-	);
-	const passwordError = $derived(
-		password === '' && !submitted ? null : getPasswordError(password)
-	);
+	const usernameError = $derived(username === '' && !submitted ? null : getUsernameError(username));
+	const passwordError = $derived(password === '' && !submitted ? null : getPasswordError(password));
 
 	const canSubmit = $derived(
-		!loading &&
-		!!turnstileToken &&
-		!getUsernameError(username) &&
-		!getPasswordError(password)
+		!loading && !!turnstileToken && !getUsernameError(username) && !getPasswordError(password)
 	);
 
 	$effect(() => {
@@ -127,19 +120,23 @@
 
 <Seo title="Вход – AnimeViewer" description="Авторизация в AnimeViewer." noindex={true} />
 
-<section class="max-w-screen-sm mx-auto px-4 py-10">
-	<div class="bg-[#0f0d19] border border-violet-300/20 rounded-2xl px-5 py-7 sm:px-8 sm:py-9 shadow-[0_0_28px_rgba(139,109,232,0.22)]">
-		<h1 class="text-2xl sm:text-3xl font-bold mb-6">Вход</h1>
+<section class="mx-auto max-w-screen-sm px-4 py-10">
+	<div
+		class="rounded-2xl border border-violet-300/20 bg-[#0f0d19] px-5 py-7 shadow-[0_0_28px_rgba(139,109,232,0.22)] sm:px-8 sm:py-9"
+	>
+		<h1 class="mb-6 text-2xl font-bold sm:text-3xl">Вход</h1>
 
 		{#if error}
-			<div class="mb-4 text-sm text-red-300 bg-red-500/10 border border-red-500/40 rounded-lg px-3 py-2">
+			<div
+				class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+			>
 				{error}
 			</div>
 		{/if}
 
 		<form class="space-y-4" onsubmit={handleSubmit}>
 			<div class="space-y-1.5">
-				<label for="username" class="text-xs uppercase tracking-wide text-white/60">Username</label>
+				<label for="username" class="text-xs tracking-wide text-white/60 uppercase">Username</label>
 				<Input
 					type="text"
 					placeholder="Admin"
@@ -148,12 +145,12 @@
 					ariaLabel="Username"
 				/>
 				{#if usernameError}
-					<p class="text-xs text-red-300 mt-1">{usernameError}</p>
+					<p class="mt-1 text-xs text-red-300">{usernameError}</p>
 				{/if}
 			</div>
 
 			<div class="space-y-1.5">
-				<label for="password" class="text-xs uppercase tracking-wide text-white/60">Пароль</label>
+				<label for="password" class="text-xs tracking-wide text-white/60 uppercase">Пароль</label>
 				<Input
 					type="password"
 					placeholder="Минимум 8 символов"
@@ -162,11 +159,11 @@
 					ariaLabel="Пароль"
 				/>
 				{#if passwordError}
-					<p class="text-xs text-red-300 mt-1">{passwordError}</p>
+					<p class="mt-1 text-xs text-red-300">{passwordError}</p>
 				{/if}
 			</div>
 
-			<div class="pt-2 flex justify-center">
+			<div class="flex justify-center pt-2">
 				<div class="w-fit">
 					<Turnstile
 						bind:this={turnstileRef}
@@ -178,12 +175,12 @@
 			</div>
 
 			{#if submitted && !turnstileToken}
-				<p class="text-xs text-red-300 mt-2 text-center">Подтвердите, что вы не бот.</p>
+				<p class="mt-2 text-center text-xs text-red-300">Подтвердите, что вы не бот.</p>
 			{/if}
 
 			<button
 				type="submit"
-				class="btn-custom w-full justify-center mt-2 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+				class="btn-custom mt-2 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
 				disabled={!canSubmit}
 			>
 				{#if loading}
@@ -194,9 +191,11 @@
 			</button>
 		</form>
 
-		<p class="mt-6 text-xs sm:text-sm text-white/60 text-center">
+		<p class="mt-6 text-center text-xs text-white/60 sm:text-sm">
 			Нет аккаунта?
-			<a href="/register" class="text-fuchsia-400 hover:text-fuchsia-300 font-medium">Зарегистрироваться</a>
+			<a href="/register" class="font-medium text-fuchsia-400 hover:text-fuchsia-300"
+				>Зарегистрироваться</a
+			>
 		</p>
 	</div>
 </section>

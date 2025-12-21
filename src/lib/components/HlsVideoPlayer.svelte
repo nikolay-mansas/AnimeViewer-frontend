@@ -141,11 +141,12 @@
 	});
 
 	const showSkipOpening = $derived(
-		opening_start != null && opening_start > 0 && current >= opening_start && current < opening_start + 15
+		opening_start != null &&
+			opening_start > 0 &&
+			current >= opening_start &&
+			current < opening_start + 15
 	);
-	const showNextButton = $derived(
-		end != null && end > 0 && current >= end && current < end + 15
-	);
+	const showNextButton = $derived(end != null && end > 0 && current >= end && current < end + 15);
 
 	const progressPercent = $derived(!duration ? 0 : Math.min(100, (current / duration) * 100));
 	const bufferPercent = $derived(!duration ? 0 : Math.min(100, (buffered / duration) * 100));
@@ -164,9 +165,11 @@
 		}
 
 		try {
-			const url = PUBLIC_API_URL + `/api/v2/watcher/?anime_gid=${encodeURIComponent(
-				animeGid
-			)}&series=${encodeURIComponent(String(series))}`;
+			const url =
+				PUBLIC_API_URL +
+				`/api/v2/watcher/?anime_gid=${encodeURIComponent(
+					animeGid
+				)}&series=${encodeURIComponent(String(series))}`;
 
 			const res = await fetch(url, {
 				method: 'GET',
@@ -224,7 +227,7 @@
 		goto('/login');
 	}
 
-		function startWatchTimer() {
+	function startWatchTimer() {
 		if (watchInterval) return;
 
 		watchInterval = setInterval(() => {
@@ -252,11 +255,7 @@
 		const percentage = total > 0 ? Math.round((timecode / total) * 100) : 0;
 
 		const viewedBoundary =
-			end && end > 0
-				? end - 10
-				: videoEl.duration
-					? videoEl.duration - 10
-					: Infinity;
+			end && end > 0 ? end - 10 : videoEl.duration ? videoEl.duration - 10 : Infinity;
 
 		const viewed = timecode >= viewedBoundary;
 
@@ -415,8 +414,7 @@
 			});
 
 			hls.on(Hls.Events.LEVEL_SWITCHED, (_: any, data: any) => {
-				currentQualityIndex =
-					typeof data.level === 'number' ? data.level : currentQualityIndex;
+				currentQualityIndex = typeof data.level === 'number' ? data.level : currentQualityIndex;
 			});
 
 			hls.on(Hls.Events.LEVEL_LOADED, () => {
@@ -481,8 +479,7 @@
 
 				if (mbps != null && mbps > 0) {
 					const alpha = 0.2;
-					netDownlink =
-						netDownlink == null ? mbps : netDownlink * (1 - alpha) + mbps * alpha;
+					netDownlink = netDownlink == null ? mbps : netDownlink * (1 - alpha) + mbps * alpha;
 
 					updateQualityByNetwork();
 
@@ -490,14 +487,10 @@
 						hls && typeof hls.currentLevel === 'number' ? hls.currentLevel : null;
 
 					const autoCap =
-						hls && (hls as any).autoLevelCapping != null
-							? (hls as any).autoLevelCapping
-							: null;
+						hls && (hls as any).autoLevelCapping != null ? (hls as any).autoLevelCapping : null;
 
 					const pickedBitrate =
-						currentLevel != null &&
-						currentLevel >= 0 &&
-						currentLevel < qualities.length
+						currentLevel != null && currentLevel >= 0 && currentLevel < qualities.length
 							? qualities[currentLevel].bitrate
 							: null;
 
@@ -570,14 +563,12 @@
 
 			if (resumeFrom != null && videoEl) {
 				const d = videoEl.duration || 0;
-				const target =
-					d && resumeFrom > 0 && resumeFrom < d - 1 ? resumeFrom : resumeFrom;
+				const target = d && resumeFrom > 0 && resumeFrom < d - 1 ? resumeFrom : resumeFrom;
 
 				try {
 					videoEl.currentTime = target;
 					current = target;
-				} catch {
-				}
+				} catch {}
 
 				resumeFrom = null;
 			}
@@ -639,8 +630,7 @@
 				const target = event.target as HTMLElement | null;
 				if (
 					target &&
-					(['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
-						target.isContentEditable)
+					(['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
 				) {
 					return;
 				}
@@ -795,10 +785,7 @@
 			}
 
 			const delta = side === 'left' ? -10 : 10;
-			const next = Math.max(
-				0,
-				Math.min(videoEl.duration || Infinity, videoEl.currentTime + delta)
-			);
+			const next = Math.max(0, Math.min(videoEl.duration || Infinity, videoEl.currentTime + delta));
 			videoEl.currentTime = next;
 
 			showSeekIndicator(side);
@@ -919,16 +906,8 @@
 	}
 </script>
 
-<div
-	bind:this={playerEl}
-	class="player relative w-full h-full rounded-lg overflow-hidden bg-black"
->
-	<video
-		bind:this={videoEl}
-		playsinline
-		poster={poster}
-		class="video w-full h-full object-cover"
-	>
+<div bind:this={playerEl} class="player relative h-full w-full overflow-hidden rounded-lg bg-black">
+	<video bind:this={videoEl} playsinline {poster} class="video h-full w-full object-cover">
 		<track kind="captions" label="No captions" srclang="en" src="data:," />
 	</video>
 
@@ -955,37 +934,22 @@
 	{/if}
 
 	{#if initialOverlay}
-		<button
-			type="button"
-			class="big-play"
-			onclick={startFromOverlay}
-			aria-label="Play video"
-		>
+		<button type="button" class="big-play" onclick={startFromOverlay} aria-label="Play video">
 			<div class="big-play-bg"></div>
 			<div class="big-play-icon">
-				<PlayIcon class="w-9 h-9 translate-x-[1px]" />
+				<PlayIcon class="h-9 w-9 translate-x-[1px]" />
 			</div>
 		</button>
 	{/if}
 
 	{#if !initialOverlay && showSkipOpening}
-		<button
-			type="button"
-			class="skip-opening-btn"
-			onclick={skipOpening}
-		>
+		<button type="button" class="skip-opening-btn" onclick={skipOpening}>
 			Пропустить заставку
 		</button>
 	{/if}
 
 	{#if !initialOverlay && showNextButton && typeof onNext === 'function'}
-		<button
-			type="button"
-			class="next-episode-btn"
-			onclick={nextEpisode}
-		>
-			Следующая серия
-		</button>
+		<button type="button" class="next-episode-btn" onclick={nextEpisode}> Следующая серия </button>
 	{/if}
 
 	{#if showLoadingOverlay}
@@ -1011,16 +975,11 @@
 	{#if !initialOverlay}
 		<div class="controls" class:controls-hidden={!controlsVisible}>
 			<div class="row">
-				<button
-					type="button"
-					class="btn"
-					onclick={toggle}
-					aria-label={playing ? 'Pause' : 'Play'}
-				>
+				<button type="button" class="btn" onclick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
 					{#if playing}
-						<PauseIcon class="w-5 h-5" />
+						<PauseIcon class="h-5 w-5" />
 					{:else}
-						<PlayIcon class="w-5 h-5 translate-x-[1px]" />
+						<PlayIcon class="h-5 w-5 translate-x-[1px]" />
 					{/if}
 				</button>
 
@@ -1038,9 +997,9 @@
 						aria-label={muted || volume === 0 ? 'Включить звук' : 'Выключить звук'}
 					>
 						{#if muted || volume === 0}
-							<VolumeOffIcon class="w-5 h-5" />
+							<VolumeOffIcon class="h-5 w-5" />
 						{:else}
-							<VolumeUpIcon class="w-5 h-5" />
+							<VolumeUpIcon class="h-5 w-5" />
 						{/if}
 					</button>
 
@@ -1079,8 +1038,7 @@
 						onmouseleave={() => setScrubbing(false)}
 						ontouchstart={() => setScrubbing(true)}
 						ontouchend={() => setScrubbing(false)}
-						oninput={(e) =>
-							seek(Number((e.target as HTMLInputElement).value))}
+						oninput={(e) => seek(Number((e.target as HTMLInputElement).value))}
 						aria-label="Seek"
 					/>
 				</div>
@@ -1095,7 +1053,7 @@
 					aria-label="Settings"
 				>
 					<SettingsIcon
-						class="w-5 h-5"
+						class="h-5 w-5"
 						style={showSettings ? 'animation: gear-spin 0.5s linear' : ''}
 					/>
 				</button>
@@ -1107,9 +1065,9 @@
 					aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
 				>
 					{#if isFullscreen}
-						<FullscreenExitIcon class="w-5 h-5" />
+						<FullscreenExitIcon class="h-5 w-5" />
 					{:else}
-						<FullscreenIcon class="w-5 h-5" />
+						<FullscreenIcon class="h-5 w-5" />
 					{/if}
 				</button>
 			</div>
@@ -1141,9 +1099,7 @@
 							max={SPEED_MAX}
 							step={SPEED_STEP}
 							value={speed}
-							oninput={(e) =>
-								changeSpeed(Number((e.currentTarget as HTMLInputElement).value))
-							}
+							oninput={(e) => changeSpeed(Number((e.currentTarget as HTMLInputElement).value))}
 							onpointerdown={() => (speedActive = true)}
 							onpointerup={() => (speedActive = false)}
 							onmouseleave={() => (speedActive = false)}
@@ -1162,8 +1118,7 @@
 					</div>
 
 					<select
-						onchange={(e) =>
-							changeQuality((e.target as HTMLSelectElement).value)}
+						onchange={(e) => changeQuality((e.target as HTMLSelectElement).value)}
 						class="quality-select"
 						aria-label="Video quality"
 					>
@@ -1190,8 +1145,7 @@
 						<select
 							class="quality-select"
 							value={audioTrack ?? 0}
-							onchange={(e) =>
-								changeAudioTrack((e.target as HTMLSelectElement).value)}
+							onchange={(e) => changeAudioTrack((e.target as HTMLSelectElement).value)}
 							aria-label="Audio track"
 						>
 							{#each audioTracks as track}
@@ -1228,7 +1182,12 @@
 			color-mix(in oklab, var(--color-gray-700) 55%, transparent 45%),
 			transparent
 		);
-		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			sans-serif;
 		color: var(--color-purple-100);
 		opacity: 1;
 		transition: opacity 0.25s ease;
@@ -1374,11 +1333,7 @@
 	.cur {
 		position: absolute;
 		height: 100%;
-		background: linear-gradient(
-			90deg,
-			var(--color-violet-500),
-			var(--color-fuchsia-500)
-		);
+		background: linear-gradient(90deg, var(--color-violet-500), var(--color-fuchsia-500));
 	}
 
 	.progress-wrapper input[type='range'] {
@@ -1511,11 +1466,7 @@
 		right: 14px;
 		bottom: 56px;
 		width: 220px;
-		background: color-mix(
-			in oklab,
-			var(--color-gray-700) 90%,
-			black 10%
-		);
+		background: color-mix(in oklab, var(--color-gray-700) 90%, black 10%);
 		border-radius: 12px;
 		padding: 12px;
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
@@ -1541,12 +1492,8 @@
 		right: 18px;
 		border-width: 6px;
 		border-style: solid;
-		border-color: color-mix(
-				in oklab,
-				var(--color-gray-700) 90%,
-				black 10%
-			)
-			transparent transparent transparent;
+		border-color: color-mix(in oklab, var(--color-gray-700) 90%, black 10%) transparent transparent
+			transparent;
 	}
 
 	.block {
@@ -1675,11 +1622,7 @@
 		margin-top: 4px;
 		padding: 6px 10px;
 		font-size: 14px;
-		background: color-mix(
-			in oklab,
-			var(--color-gray-700) 70%,
-			black 30%
-		);
+		background: color-mix(in oklab, var(--color-gray-700) 70%, black 30%);
 		color: var(--color-purple-100);
 		border-radius: 8px;
 		border: 1px solid var(--color-fuchsia-500);
@@ -1709,11 +1652,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		background: radial-gradient(
-			circle at center,
-			rgba(15, 23, 42, 0.3),
-			transparent
-		);
+		background: radial-gradient(circle at center, rgba(15, 23, 42, 0.3), transparent);
 		z-index: 4;
 		color: var(--color-purple-100);
 		font-size: 14px;
@@ -1755,11 +1694,7 @@
 		white-space: nowrap;
 
 		color: #f9fafb;
-		background: linear-gradient(
-			90deg,
-			var(--color-violet-500),
-			var(--color-fuchsia-500)
-		);
+		background: linear-gradient(90deg, var(--color-violet-500), var(--color-fuchsia-500));
 
 		cursor: pointer;
 		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);

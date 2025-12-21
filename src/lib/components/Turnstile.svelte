@@ -34,9 +34,7 @@
 
 		scriptPromise = new Promise<void>((resolve, reject) => {
 			// если уже есть — просто резолвим
-			const existing = document.querySelector<HTMLScriptElement>(
-				'script[data-turnstile="true"]'
-			);
+			const existing = document.querySelector<HTMLScriptElement>('script[data-turnstile="true"]');
 			if (existing) {
 				resolve();
 				return;

@@ -76,8 +76,8 @@
 	});
 </script>
 
-<div bind:this={grid} class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-stretch">
+<div bind:this={grid} class="grid grid-cols-2 items-stretch gap-4 sm:grid-cols-3 lg:grid-cols-4">
 	{#each animes as anime}
-		<AnimeCard {...anime} registerTitle={registerTitle} />
+		<AnimeCard {...anime} {registerTitle} />
 	{/each}
 </div>

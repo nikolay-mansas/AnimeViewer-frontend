@@ -151,27 +151,28 @@
 	</title>
 </svelte:head>
 
-<div class="max-w-screen-xl mx-auto px-4 py-12 md:py-16">
-	<div class="flex flex-col items-center justify-center min-h-[70vh] gap-8">
+<div class="mx-auto max-w-screen-xl px-4 py-12 md:py-16">
+	<div class="flex min-h-[70vh] flex-col items-center justify-center gap-8">
 		<article
-			class="relative w-full max-w-2xl rounded-2xl bg-[#0e0b17]/80 border border-white/10 shadow-[0_0_40px_rgba(124,58,237,0.35)] overflow-hidden"
+			class="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-[#0e0b17]/80 shadow-[0_0_40px_rgba(124,58,237,0.35)]"
 		>
 			<div class="grid grid-cols-1 sm:grid-cols-[minmax(0,160px)_1fr]">
 				<div class="relative bg-gradient-to-b from-purple-600/70 via-indigo-700/70 to-slate-900">
-					<div class="aspect-[2/3] w-full flex items-center justify-center">
+					<div class="flex aspect-[2/3] w-full items-center justify-center">
 						<div class="text-center">
-							<div class="text-[10px] uppercase tracking-[0.25em] text-white/60 mb-1">
-								код
-							</div>
+							<div class="mb-1 text-[10px] tracking-[0.25em] text-white/60 uppercase">код</div>
 							<div
-								class="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_0_15px_rgba(191,99,255,0.7)] tabular-nums"
+								class="text-4xl font-black text-white tabular-nums drop-shadow-[0_0_15px_rgba(191,99,255,0.7)] sm:text-5xl"
 							>
 								{displayCode}
 							</div>
 						</div>
 					</div>
 
-					<div class="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen" aria-hidden="true">
+					<div
+						class="pointer-events-none absolute inset-0 opacity-40 mix-blend-screen"
+						aria-hidden="true"
+					>
 						<div
 							class="absolute inset-0 bg-[radial-gradient(circle_at_0_0,#a855f7_0,transparent_55%),radial-gradient(circle_at_100%_0,#4f46e5_0,transparent_55%)]"
 						></div>
@@ -182,17 +183,17 @@
 
 					{#if isAnimating}
 						<div
-							class="absolute bottom-3 left-4 text-[9px] uppercase tracking-[0.25em] text-white/55 flex items-center gap-2"
+							class="absolute bottom-3 left-4 flex items-center gap-2 text-[9px] tracking-[0.25em] text-white/55 uppercase"
 						>
 							<span
-								class="h-1 w-6 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 animate-pulse"
+								class="h-1 w-6 animate-pulse rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400"
 							></span>
 							<span>декодирование ошибки</span>
 						</div>
 					{/if}
 				</div>
 
-				<div class="p-4 sm:p-6 flex flex-col gap-4">
+				<div class="flex flex-col gap-4 p-4 sm:p-6">
 					<!-- <p class="text-[11px] uppercase tracking-[0.25em] text-purple-300/70">
 						{#if status === 404}
 							страница не найдена
@@ -203,13 +204,13 @@
 						{/if}
 					</p> -->
 
-					<h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
+					<h1 class="text-xl leading-tight font-bold text-white sm:text-2xl md:text-3xl">
 						{displayTitle}
 					</h1>
 
 					<p
-						class={`text-sm sm:text-base text-white/70 leading-relaxed whitespace-pre-line transition-all duration-500 ease-out ${
-							displayHint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
+						class={`text-sm leading-relaxed whitespace-pre-line text-white/70 transition-all duration-500 ease-out sm:text-base ${
+							displayHint ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
 						}`}
 					>
 						{displayHint}
@@ -222,7 +223,7 @@
 
 						<a
 							href="/"
-							class="btn-custom text-sm sm:text-base bg-transparent border border-purple-400/60 hover:bg-purple-500/10"
+							class="btn-custom border border-purple-400/60 bg-transparent text-sm hover:bg-purple-500/10 sm:text-base"
 						>
 							На главную
 						</a>
@@ -230,7 +231,9 @@
 				</div>
 			</div>
 
-			<div class="absolute -inset-px pointer-events-none border border-purple-500/10 rounded-2xl"></div>
+			<div
+				class="pointer-events-none absolute -inset-px rounded-2xl border border-purple-500/10"
+			></div>
 		</article>
 
 		<!-- <p class="text-xs sm:text-sm text-white/40 text-center max-w-lg">
@@ -241,11 +244,6 @@
 
 <style>
 	:global(body) {
-		background: radial-gradient(
-				60% 60% at 10% 0%,
-				rgba(41, 18, 80, 0.4),
-				transparent
-			),
-			#0a0a12;
+		background: radial-gradient(60% 60% at 10% 0%, rgba(41, 18, 80, 0.4), transparent), #0a0a12;
 	}
 </style>

@@ -26,9 +26,11 @@
 
 <AuthNotice />
 
-<main class="min-h-screen bg-[#0a0a12] text-white font-sans">
-	<header class="flex flex-wrap gap-3 justify-between items-center px-4 py-4 border-b border-white/10">
-		<a href="/" class="text-xl sm:text-2xl font-bold text-white tracking-wide">
+<main class="min-h-screen bg-[#0a0a12] font-sans text-white">
+	<header
+		class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4"
+	>
+		<a href="/" class="text-xl font-bold tracking-wide text-white sm:text-2xl">
 			<span class="text-purple-400">β</span> AnimeViewer
 		</a>
 

@@ -23,7 +23,9 @@
 
 	const origin = $derived.by(() => page.url.origin);
 	const url = $derived.by(() => canonical ?? page.url.href);
-	const img = $derived.by(() => (image ? (image.startsWith('http') ? image : `${origin}${image}`) : undefined));
+	const img = $derived.by(() =>
+		image ? (image.startsWith('http') ? image : `${origin}${image}`) : undefined
+	);
 	const ldList = $derived.by(() => (Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : []));
 </script>
 
@@ -32,7 +34,12 @@
 	<meta name="description" content={description} />
 	<link rel="canonical" href={url} />
 
-	<meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'} />
+	<meta
+		name="robots"
+		content={noindex
+			? 'noindex,nofollow'
+			: 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'}
+	/>
 
 	<meta property="og:locale" content="ru_RU" />
 	<meta property="og:site_name" content="AnimeViewer" />
@@ -52,6 +59,8 @@
 	{/if}
 
 	{#each ldList as ld}
-		<script type="application/ld+json">{JSON.stringify(ld)}</script>
+		<script type="application/ld+json">
+{JSON.stringify(ld)}
+		</script>
 	{/each}
 </svelte:head>

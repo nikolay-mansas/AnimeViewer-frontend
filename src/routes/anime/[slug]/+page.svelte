@@ -42,22 +42,22 @@
 	description={pageDesc}
 	image={imageUrl}
 	type="video.tv_show"
-	canonical={canonical}
+	{canonical}
 	jsonLd={ld}
 />
 
 <AnimeProfile
-	title={title}
-	titleJp={titleJp}
-	titles={titles}
-	start_date={start_date}
-	end_date={end_date}
+	{title}
+	{titleJp}
+	{titles}
+	{start_date}
+	{end_date}
 	episodes={episodesTotal}
-	imageUrl={imageUrl}
-	description={description}
-	genres={genres}
-	episodesWatched={episodesWatched}
-	animeGid={animeGid}
+	{imageUrl}
+	{description}
+	{genres}
+	{episodesWatched}
+	{animeGid}
 />
 
 <Footer />

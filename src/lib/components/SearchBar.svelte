@@ -26,7 +26,7 @@
 
 	<button
 		type="submit"
-		class="btn-custom disabled:opacity-40 disabled:cursor-not-allowed"
+		class="btn-custom disabled:cursor-not-allowed disabled:opacity-40"
 		disabled={q.trim() === ''}
 	>
 		Найти
