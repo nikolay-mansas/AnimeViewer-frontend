@@ -1,9 +1,11 @@
 <script lang="ts">
+	import Turnstile from '$lib/components/Turnstile.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import Seo from '$lib/components/Seo.svelte';
-	import { goto } from '$app/navigation';
+	import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
 	import { PUBLIC_API_URL } from '$env/static/public';
+	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
 
 	const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -16,6 +18,9 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let submitted = $state(false);
+
+	let turnstileToken = $state<string | null>(null);
+	let turnstileRef = $state<InstanceType<typeof Turnstile> | null>(null);
 
 	function getEmailError(value: string): string | null {
 		const v = value.trim();
@@ -67,6 +72,7 @@
 
 	const canSubmit = $derived(
 		!loading &&
+		!!turnstileToken &&
 		!getEmailError(email) &&
 		!getUsernameError(username) &&
 		!getPasswordError(password) &&
@@ -96,6 +102,7 @@
 			body.set('email', cleanEmail);
 			body.set('username', cleanUsername);
 			body.set('password', password);
+			body.set('cf_token', turnstileToken!);
 
 			const res = await fetch(PUBLIC_API_URL + '/api/v2/auth/signup', {
 				method: 'POST',
@@ -119,6 +126,9 @@
 				} else if (res.status === 409) {
 					message = 'Пользователь с такими данными уже существует.';
 				}
+
+				turnstileRef?.reset?.();
+				turnstileToken = null;
 
 				throw new Error(message);
 			}
@@ -209,6 +219,21 @@
 					<p class="text-xs text-red-300 mt-1">{passwordRepeatError}</p>
 				{/if}
 			</div>
+
+			<div class="pt-2 flex justify-center">
+				<div class="w-fit">
+					<Turnstile
+						bind:this={turnstileRef}
+						siteKey={PUBLIC_TURNSTILE_SITE_KEY}
+						onToken={(t) => (turnstileToken = t)}
+						theme="auto"
+					/>
+				</div>
+			</div>
+
+			{#if submitted && !turnstileToken}
+				<p class="text-xs text-red-300 mt-2 text-center">Подтвердите, что вы не бот.</p>
+			{/if}
 
 			<button
 				type="submit"
