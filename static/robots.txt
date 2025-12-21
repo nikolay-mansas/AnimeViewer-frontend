@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Allow: /anime/string
+Disallow: /anime/string/1
+Disallow: /anime/string/2
+Disallow: /anime/string/3
+Disallow: /anime/string/4
+Disallow: /anime/string/5
+Disallow: /anime/string/6
+Disallow: /anime/string/7
+Disallow: /anime/string/8
+Disallow: /anime/string/9
+Disallow: /anime/string/10
+Disallow: /anime/string/11
+Disallow: /anime/string/12
+Sitemap: https://animeviewer.ru/sitemap.xml
