@@ -58,7 +58,10 @@
 		filters?: FilterConfig[];
 	}
 
-	type Item = Record<string, unknown>;
+	type Item = Record<string, any>;
+
+	type GenreItem = { gid: string; name: string };
+	type TitleDraft = { gid?: string | null; language: string; name: string };
 
 	const statusOptions: Option[] = [
 		{ value: 'ongoing', label: 'Онгоинг' },
@@ -123,8 +126,8 @@
 				{ name: 'url', label: 'URL', type: 'text' },
 				{ name: 'preview_path', label: 'Постер (preview_path)', type: 'text' },
 				{ name: 'number_episodes', label: 'Кол-во эпизодов', type: 'number' },
-				{ name: 'start_date', label: 'Дата начала', type: 'text' },
-				{ name: 'end_date', label: 'Дата конца', type: 'text' },
+				{ name: 'start_date', label: 'Дата начала', type: 'number' },
+				{ name: 'end_date', label: 'Дата конца', type: 'number' },
 				{ name: 'description', label: 'Описание', type: 'textarea' },
 				{ name: 'enable', label: 'Включено', type: 'checkbox' },
 				{ name: 'created_at', label: 'Создано', type: 'text', readOnly: true },
@@ -188,9 +191,7 @@
 				{ value: 'anime_gid', label: 'Аниме GID' },
 				{ value: 'gid', label: 'GID' }
 			],
-			filters: [
-				{ field: 'language', type: 'select', label: 'Язык', options: languageOptions }
-			]
+			filters: [{ field: 'language', type: 'select', label: 'Язык', options: languageOptions }]
 		},
 		watcher: {
 			key: 'watcher',
@@ -206,7 +207,7 @@
 				{ key: 'account_gid', label: 'Аккаунт' },
 				{ key: 'series', label: 'Серия' },
 				{ key: 'timecode', label: 'Таймкод' },
-				{ key: 'viewed', label: 'Просмотрено' },
+				{ key: 'viewed', label: 'Просмотрено' }
 			],
 			fields: [
 				{ name: 'gid', label: 'GID', type: 'text', readOnly: true },
@@ -332,6 +333,13 @@
 
 	let passwordLocked = $state(true);
 
+	let genreDrawerOpen = $state(false);
+	let genreListLoading = $state(false);
+	let allGenres = $state<GenreItem[]>([]);
+	let genreSearch = $state('');
+
+	let titlesDrawerOpen = $state(false);
+
 	async function authorizedFetch(url: string, init: RequestInit = {}) {
 		const token = auth.getToken();
 		const headers = new Headers(init.headers ?? {});
@@ -347,21 +355,53 @@
 		return entityConfigs[activeEntity];
 	}
 
+	function isUuid(v: unknown): v is string {
+		if (typeof v !== 'string') return false;
+		return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+	}
+
+	function normalizeAnimeEditorShape(obj: Item) {
+		const rawGenres = Array.isArray(obj.genres) ? obj.genres : [];
+		const normalizedGenres: string[] = rawGenres
+			.map((g: any) => (typeof g === 'string' ? g : g?.gid))
+			.filter((x: any) => isUuid(x));
+
+		const rawTitles = Array.isArray(obj.titles) ? obj.titles : [];
+		const normalizedTitles: TitleDraft[] = rawTitles
+			.map((t: any) => ({
+				gid: isUuid(t?.gid) ? t.gid : null,
+				language: String(t?.language ?? 'ru'),
+				name: String(t?.name ?? '')
+			}))
+			.filter((t: TitleDraft) => t.name.trim().length > 0 || t.gid);
+
+		obj.genres = normalizedGenres;
+		obj.titles = normalizedTitles;
+	}
+
 	function createEmptyFor(entity: EntityKey): Item {
 		const config = entityConfigs[entity];
 		const obj: Item = {};
+
 		for (const field of config.fields) {
 			if (field.readOnly) continue;
-			if (field.type === 'checkbox') {
-				obj[field.name] = false;
-			} else if (field.nullable) {
-				obj[field.name] = null;
-			} else if (field.type === 'number') {
-				obj[field.name] = '';
-			} else {
-				obj[field.name] = '';
-			}
+			if (field.type === 'checkbox') obj[field.name] = false;
+			else if (field.nullable) obj[field.name] = null;
+			else if (field.type === 'number') obj[field.name] = '';
+			else obj[field.name] = '';
 		}
+
+		if (entity === 'anime') {
+			const year = new Date().getFullYear();
+			obj.status = statusOptions[0]?.value ?? 'ongoing';
+			obj.type = typeOptions[0]?.value ?? 'tv';
+			obj.age = ageOptions[2]?.value ?? 'pg-13';
+			obj.start_date = year;
+			obj.end_date = year;
+			obj.genres = [];
+			obj.titles = [{ language: 'ru', name: '' }];
+		}
+
 		return obj;
 	}
 
@@ -370,12 +410,10 @@
 
 		try {
 			return JSON.parse(JSON.stringify(value));
-		} catch (e) {
+		} catch {
 			const copy = {} as T;
 			for (const key in value) {
-				if (value.hasOwnProperty(key)) {
-					copy[key] = value[key];
-				}
+				if (Object.prototype.hasOwnProperty.call(value, key)) copy[key] = value[key];
 			}
 			return copy;
 		}
@@ -401,19 +439,21 @@
 		isNew = false;
 		passwordLocked = true;
 
+		genreDrawerOpen = false;
+		titlesDrawerOpen = false;
+
 		const cfg = entityConfigs[entityKey];
 		searchField = cfg.searchFields[0]?.value ?? '';
 
 		const defaults: Record<string, string> = {};
-		for (const f of cfg.filters ?? []) {
-			defaults[f.field] = '';
-		}
+		for (const f of cfg.filters ?? []) defaults[f.field] = '';
 		filterValues = defaults;
 	}
 
 	async function loadList() {
 		listLoading = true;
 		const config = getConfig();
+
 		try {
 			const params = new URLSearchParams();
 			params.set('page', String(page));
@@ -425,14 +465,10 @@
 			}
 
 			for (const [key, value] of Object.entries(filterValues)) {
-				if (value !== '') {
-					params.set(key, value);
-				}
+				if (value !== '') params.set(key, value);
 			}
 
-			const res = await authorizedFetch(
-				PUBLIC_API_URL + config.endpoints.list + '?' + params.toString()
-			);
+			const res = await authorizedFetch(PUBLIC_API_URL + config.endpoints.list + '?' + params.toString());
 			const json = await res.json();
 			const data = (json.result ?? json.items ?? json) as Item[];
 
@@ -445,6 +481,54 @@
 		}
 	}
 
+	async function loadAllGenresOnce() {
+		if (genreListLoading) return;
+		if (allGenres.length > 0) return;
+
+		genreListLoading = true;
+		try {
+			const pageSize = 300;
+			let page = 1;
+			const merged: GenreItem[] = [];
+			const seen = new Set<string>();
+
+			for (let i = 0; i < 200; i++) {
+				const params = new URLSearchParams();
+				params.set('page', String(page));
+				params.set('page_size', String(pageSize));
+
+				const res = await authorizedFetch(
+					PUBLIC_API_URL + entityConfigs.genre.endpoints.list + '?' + params.toString()
+				);
+				const json = await res.json();
+				const data = (json.result ?? json.items ?? json) as any[];
+
+				const chunk: GenreItem[] = Array.isArray(data)
+					? data
+							.map((g) => ({ gid: String(g?.gid ?? ''), name: String(g?.name ?? '') }))
+							.filter((g) => isUuid(g.gid) && g.name)
+					: [];
+
+				for (const g of chunk) {
+					if (!seen.has(g.gid)) {
+						seen.add(g.gid);
+						merged.push(g);
+					}
+				}
+
+				if (chunk.length < pageSize) break;
+
+				page += 1;
+			}
+
+			allGenres = merged;
+		} catch (e) {
+			console.error(e);
+		} finally {
+			genreListLoading = false;
+		}
+	}
+
 	function openNew() {
 		editingItem = createEmptyFor(activeEntity);
 		isNew = true;
@@ -452,6 +536,11 @@
 		if (activeEntity === 'account') {
 			passwordLocked = false;
 			(editingItem as Item).password = '';
+		}
+
+		if (activeEntity === 'anime') {
+			normalizeAnimeEditorShape(editingItem as Item);
+			loadAllGenresOnce();
 		}
 	}
 
@@ -463,71 +552,53 @@
 			passwordLocked = true;
 			(editingItem as Item).password = null;
 		}
-	}
 
-	async function saveCurrent() {
-		if (!editingItem) return;
-		saving = true;
-		const config = getConfig();
-
-		try {
-			const gid = editingItem.gid as string | undefined;
-			const hasId = Boolean(gid);
-
-			let path = config.endpoints.create;
-			let method: 'POST' | 'PUT' = 'POST';
-
-			if (hasId && !isNew) {
-				path = buildEndpoint(config.endpoints.update, { gid: gid as string });
-				method = 'PUT';
-			}
-
-			const payload = cloneItem(editingItem);
-
-			if (config.key === 'account') {
-				if (!isNew && passwordLocked) {
-					(payload as Item).password = null;
-				}
-			}
-
-			const res = await authorizedFetch(PUBLIC_API_URL + path, {
-				method,
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-
-			const json = await res.json();
-			editingItem = (json.result ?? json) as Item;
-			isNew = false;
-			await loadList();
-		} catch (e) {
-			console.error(e);
-		} finally {
-			saving = false;
+		if (activeEntity === 'anime') {
+			normalizeAnimeEditorShape(editingItem as Item);
+			loadAllGenresOnce();
 		}
 	}
 
-	async function deleteCurrent() {
+	function updateField(field: FieldConfig, value: unknown) {
 		if (!editingItem) return;
-		const gid = editingItem.gid as string | undefined;
-		if (!gid) return;
-		if (!confirm('Удалить объект?')) return;
 
-		saving = true;
-		const config = getConfig();
+		if (field.type === 'number') {
+			const str = typeof value === 'string' ? value : String(value ?? '');
+			if (str === '') {
+				editingItem[field.name] = field.nullable ? null : '';
+				return;
+			}
+			const num = Number(str);
+			editingItem[field.name] = Number.isNaN(num) ? (field.nullable ? null : '') : num;
+			return;
+		}
 
-		try {
-			const path = buildEndpoint(config.endpoints.delete, { gid });
-			await authorizedFetch(PUBLIC_API_URL + path, {
-				method: 'DELETE'
-			});
-			editingItem = null;
-			isNew = false;
-			await loadList();
-		} catch (e) {
-			console.error(e);
-		} finally {
-			saving = false;
+		if (field.nullable && (value === '' || value == null)) editingItem[field.name] = null;
+		else editingItem[field.name] = value;
+	}
+
+	function formatValue(value: unknown): string {
+		if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+		if (value == null) return '';
+		if (typeof value === 'string' && value.length > 80) return value.slice(0, 77) + '...';
+		return String(value);
+	}
+
+	function updateFilter(field: string, value: string) {
+		filterValues = { ...filterValues, [field]: value };
+		page = 1;
+	}
+
+	function changeSearchField(value: string) {
+		searchField = value;
+		page = 1;
+	}
+
+	function changePageSize(value: string) {
+		const num = Number(value);
+		if (!Number.isNaN(num) && num > 0) {
+			pageSize = num;
+			page = 1;
 		}
 	}
 
@@ -557,59 +628,175 @@
 		page = totalPages;
 	}
 
-	function updateField(field: FieldConfig, value: unknown) {
+	function getSelectedGenreIds(): string[] {
+		if (!editingItem) return [];
+		const v = editingItem.genres;
+		return Array.isArray(v) ? v.filter((x: any) => isUuid(x)) : [];
+	}
+
+	function toggleGenre(gid: string) {
 		if (!editingItem) return;
-		if (field.type === 'number') {
-			const str = typeof value === 'string' ? value : String(value ?? '');
-			if (str === '') {
-				editingItem[field.name] = field.nullable ? null : '';
-				return;
+		const current = getSelectedGenreIds();
+		if (current.includes(gid)) editingItem.genres = current.filter((x) => x !== gid);
+		else editingItem.genres = [...current, gid];
+	}
+
+	function getGenreName(gid: string) {
+		return allGenres.find((g) => g.gid === gid)?.name ?? gid;
+	}
+
+	function openGenresDrawer() {
+		genreDrawerOpen = true;
+		genreSearch = '';
+		loadAllGenresOnce();
+	}
+
+	function closeGenresDrawer() {
+		genreDrawerOpen = false;
+	}
+
+	function getTitleDrafts(): TitleDraft[] {
+		if (!editingItem) return [];
+		const v = editingItem.titles;
+		return Array.isArray(v) ? v : [];
+	}
+
+	function setTitleDrafts(next: TitleDraft[]) {
+		if (!editingItem) return;
+		editingItem.titles = next;
+	}
+
+	function addTitleRow() {
+		const drafts = getTitleDrafts();
+		setTitleDrafts([...drafts, { gid: null, language: 'ru', name: '' }]);
+	}
+
+	function removeTitleRow(index: number) {
+		const drafts = getTitleDrafts();
+		setTitleDrafts(drafts.filter((_, i) => i !== index));
+	}
+
+	function updateTitleField(index: number, key: keyof TitleDraft, value: string) {
+		const drafts = getTitleDrafts();
+		const next = drafts.map((t, i) => (i === index ? { ...t, [key]: value } : t));
+		setTitleDrafts(next);
+	}
+
+	function openTitlesDrawer() {
+		titlesDrawerOpen = true;
+		if (editingItem && !Array.isArray(editingItem.titles)) editingItem.titles = [];
+	}
+
+	function closeTitlesDrawer() {
+		titlesDrawerOpen = false;
+	}
+
+	function buildAnimePayloadForRequest(source: Item, isCreate: boolean) {
+		const payload = cloneItem(source);
+
+		const genreIds = Array.isArray(payload.genres) ? payload.genres : [];
+		payload.genres = genreIds.filter((x: any) => isUuid(x));
+
+		const drafts: TitleDraft[] = Array.isArray(payload.titles) ? payload.titles : [];
+		const cleaned = drafts
+			.map((t) => ({
+				gid: t.gid && isUuid(t.gid) ? t.gid : null,
+				language: String(t.language ?? 'ru'),
+				name: String(t.name ?? '').trim()
+			}))
+			.filter((t) => t.name.length > 0);
+
+		const dedupKey = new Set<string>();
+		const deduped = cleaned.filter((t) => {
+			const k = `${t.language}::${t.name}`.toLowerCase();
+			if (dedupKey.has(k)) return false;
+			dedupKey.add(k);
+			return true;
+		});
+
+		if (isCreate) payload.titles = deduped.map((t) => ({ language: t.language, name: t.name }));
+		else payload.titles = deduped.map((t) => ({ gid: t.gid ?? null, language: t.language, name: t.name }));
+
+		return payload;
+	}
+
+	async function saveCurrent() {
+		if (!editingItem) return;
+		saving = true;
+
+		const config = getConfig();
+
+		try {
+			const gid = editingItem.gid as string | undefined;
+			const hasId = Boolean(gid);
+
+			let path = config.endpoints.create;
+			let method: 'POST' | 'PUT' = 'POST';
+
+			if (hasId && !isNew) {
+				path = buildEndpoint(config.endpoints.update, { gid: gid as string });
+				method = 'PUT';
 			}
-			const num = Number(str);
-			editingItem[field.name] = Number.isNaN(num)
-				? field.nullable
-					? null
-					: ''
-				: num;
-		} else {
-			if (field.nullable && (value === '' || value == null)) {
-				editingItem[field.name] = null;
-			} else {
-				editingItem[field.name] = value;
+
+			let payload = cloneItem(editingItem);
+
+			if (config.key === 'account') {
+				if (!isNew && passwordLocked) payload.password = null;
 			}
+
+			if (config.key === 'anime') {
+				const isCreate = method === 'POST';
+				payload = buildAnimePayloadForRequest(payload, isCreate);
+			}
+
+			const res = await authorizedFetch(PUBLIC_API_URL + path, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+
+			const json = await res.json();
+			editingItem = (json.result ?? json) as Item;
+			isNew = false;
+
+			if (activeEntity === 'anime' && editingItem) normalizeAnimeEditorShape(editingItem);
+
+			genreDrawerOpen = false;
+			titlesDrawerOpen = false;
+
+			await loadList();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			saving = false;
 		}
 	}
 
-	function formatValue(value: unknown): string {
-		if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
-		if (value == null) return '';
-		if (typeof value === 'string' && value.length > 80) return value.slice(0, 77) + '...';
-		return String(value);
-	}
+	async function deleteCurrent() {
+		if (!editingItem) return;
+		const gid = editingItem.gid as string | undefined;
+		if (!gid) return;
+		if (!confirm('Удалить объект?')) return;
 
-	function updateFilter(field: string, value: string) {
-		filterValues = { ...filterValues, [field]: value };
-		page = 1;
-	}
+		saving = true;
+		const config = getConfig();
 
-	function changeSearchField(value: string) {
-		searchField = value;
-		page = 1;
-	}
-
-	function changePageSize(value: string) {
-		const num = Number(value);
-		if (!Number.isNaN(num) && num > 0) {
-			pageSize = num;
-			page = 1;
+		try {
+			const path = buildEndpoint(config.endpoints.delete, { gid });
+			await authorizedFetch(PUBLIC_API_URL + path, { method: 'DELETE' });
+			editingItem = null;
+			isNew = false;
+			await loadList();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			saving = false;
 		}
 	}
 
 	$effect(() => {
 		const cfg = getConfig();
-		if (!searchField && cfg.searchFields.length) {
-			searchField = cfg.searchFields[0].value;
-		}
+		if (!searchField && cfg.searchFields.length) searchField = cfg.searchFields[0].value;
 	});
 
 	$effect(() => {
@@ -623,19 +810,13 @@
 	});
 </script>
 
-<Seo
-	title="Админ-панель – AnimeViewer"
-	description="Внутренняя панель управления."
-	noindex={true}
-/>
+<Seo title="Админ-панель – AnimeViewer" description="Внутренняя панель управления." noindex={true} />
 
 <div class="max-w-screen-2xl mx-auto px-4 pt-8 pb-10 space-y-6">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">Админ-панель</h1>
-			<p class="text-sm text-white/60 mt-1">
-				Управление аниме, жанрами, пользователями, историей и видео.
-			</p>
+			<p class="text-sm text-white/60 mt-1">Управление аниме, жанрами, пользователями, историей и видео.</p>
 		</div>
 
 		<div class="flex flex-wrap gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
@@ -669,8 +850,7 @@
 							<select
 								class="w-40 bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
 								value={searchField}
-								onchange={(e) =>
-									changeSearchField((e.target as HTMLSelectElement).value)}
+								onchange={(e) => changeSearchField((e.target as HTMLSelectElement).value)}
 							>
 								{#each getConfig().searchFields as sf}
 									<option value={sf.value}>{sf.label}</option>
@@ -687,11 +867,7 @@
 									<select
 										class="bg-[#14101e] border border-white/10 rounded-full px-2 pr-7 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
 										value={filterValues[filter.field] ?? ''}
-										onchange={(e) =>
-											updateFilter(
-												filter.field,
-												(e.target as HTMLSelectElement).value
-											)}
+										onchange={(e) => updateFilter(filter.field, (e.target as HTMLSelectElement).value)}
 									>
 										<option value="">Все</option>
 										{#each filter.options as opt}
@@ -704,47 +880,32 @@
 					{/if}
 				</div>
 
-				<button class="btn-custom whitespace-nowrap" onclick={openNew}>
-					Добавить
-				</button>
+				<button class="btn-custom whitespace-nowrap" onclick={openNew}>Добавить</button>
 			</div>
 
 			{#if listLoading}
-				<div class="py-10 text-center text-white/60 text-sm">
-					Загрузка...
-				</div>
+				<div class="py-10 text-center text-white/60 text-sm">Загрузка...</div>
 			{:else if items.length === 0}
-				<div class="py-10 text-center text-white/60 text-sm">
-					Ничего не найдено
-				</div>
+				<div class="py-10 text-center text-white/60 text-sm">Ничего не найдено</div>
 			{:else}
 				<div class="overflow-auto rounded-2xl border border-white/10 bg-black/20">
 					<table class="min-w-full text-sm">
 						<thead class="bg-white/5 text-[11px] uppercase tracking-wide text-white/60">
 							<tr>
-								<th class="px-3 py-2 text-left sticky left-0 z-10 bg-[#14101e]">
-									{getConfig().label}
-								</th>
+								<th class="px-3 py-2 text-left sticky left-0 z-10 bg-[#14101e]">{getConfig().label}</th>
 								{#each getConfig().columns as col}
-									<th class="px-3 py-2 text-left whitespace-nowrap">
-										{col.label}
-									</th>
+									<th class="px-3 py-2 text-left whitespace-nowrap">{col.label}</th>
 								{/each}
 							</tr>
 						</thead>
 						<tbody>
 							{#each items as item}
-								<tr
-									class="border-t border-white/5 hover:bg-white/5 cursor-pointer"
-									onclick={() => openExisting(item)}
-								>
+								<tr class="border-t border-white/5 hover:bg-white/5 cursor-pointer" onclick={() => openExisting(item)}>
 									<td class="px-3 py-2 text-[13px] font-medium sticky left-0 bg-[#14101e]">
 										{item[getConfig().primaryField] ?? '—'}
 									</td>
 									{#each getConfig().columns as col}
-										<td class="px-3 py-2 text-[13px] text-white/80 align-top">
-											{formatValue(item[col.key])}
-										</td>
+										<td class="px-3 py-2 text-[13px] text-white/80 align-top">{formatValue(item[col.key])}</td>
 									{/each}
 								</tr>
 							{/each}
@@ -752,21 +913,17 @@
 					</table>
 				</div>
 
-				<div
-					class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-[12px] text-white/65"
-				>
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-[12px] text-white/65">
 					<div class="flex flex-wrap items-center gap-3">
 						<div>
-							Всего:
-							<span class="font-semibold text-white/80">{total}</span>
+							Всего: <span class="font-semibold text-white/80">{total}</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<span>На странице:</span>
 							<select
 								class="bg-[#14101e] border border-white/10 rounded-full px-2 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/60"
 								value={String(pageSize)}
-								onchange={(e) =>
-									changePageSize((e.target as HTMLSelectElement).value)}
+								onchange={(e) => changePageSize((e.target as HTMLSelectElement).value)}
 							>
 								{#each pageSizeOptions as size}
 									<option value={size}>{size}</option>
@@ -816,16 +973,10 @@
 			{#if editingItem}
 				<div class="flex items-start justify-between gap-3 mb-4">
 					<div>
-						<h2 class="text-lg font-semibold">
-							{isNew ? 'Новый объект' : 'Редактирование'}
-						</h2>
-						<p class="text-xs text-white/60 mt-1">
-							{getConfig().label}
-						</p>
+						<h2 class="text-lg font-semibold">{isNew ? 'Новый объект' : 'Редактирование'}</h2>
+						<p class="text-xs text-white/60 mt-1">{getConfig().label}</p>
 					</div>
-					<span
-						class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-white/60"
-					>
+					<span class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-white/60">
 						{activeEntity}
 					</span>
 				</div>
@@ -846,11 +997,7 @@
 											type="checkbox"
 											class="rounded border-white/30 bg-[#14101e] text-fuchsia-500 focus:ring-fuchsia-500/60"
 											checked={Boolean(editingItem[field.name])}
-											onchange={(e) =>
-												updateField(
-													field,
-													(e.target as HTMLInputElement).checked
-												)}
+											onchange={(e) => updateField(field, (e.target as HTMLInputElement).checked)}
 											disabled={field.readOnly}
 										/>
 										<span>{field.label}</span>
@@ -868,34 +1015,22 @@
 											id={`${getConfig().key}-${field.name}`}
 											class="w-full resize-y min-h-[80px] bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
 											value={editingItem[field.name] ?? ''}
-											oninput={(e) =>
-												updateField(
-													field,
-													(e.target as HTMLTextAreaElement).value
-												)}
+											oninput={(e) => updateField(field, (e.target as HTMLTextAreaElement).value)}
 											readonly={field.readOnly}
 										></textarea>
-
 									{:else if field.type === 'select'}
 										<select
 											id={`${getConfig().key}-${field.name}`}
 											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
 											value={editingItem[field.name] ?? ''}
-											onchange={(e) =>
-												updateField(
-													field,
-													(e.target as HTMLSelectElement).value
-												)}
+											onchange={(e) => updateField(field, (e.target as HTMLSelectElement).value)}
 											disabled={field.readOnly}
 										>
 											<option value="">—</option>
 											{#each field.options ?? [] as opt}
-												<option value={opt.value}>
-													{opt.label}
-												</option>
+												<option value={opt.value}>{opt.label}</option>
 											{/each}
 										</select>
-
 									{:else if field.type === 'password' && activeEntity === 'account'}
 										<div class="flex gap-2 items-center">
 											<input
@@ -904,9 +1039,7 @@
 												type="password"
 												value={passwordLocked ? '********' : (editingItem[field.name] ?? '')}
 												oninput={(e) => {
-													if (!passwordLocked) {
-														updateField(field, (e.target as HTMLInputElement).value);
-													}
+													if (!passwordLocked) updateField(field, (e.target as HTMLInputElement).value);
 												}}
 												readonly={field.readOnly || passwordLocked}
 											/>
@@ -918,10 +1051,10 @@
 													onclick={() => {
 														if (passwordLocked) {
 															passwordLocked = false;
-															if (editingItem) editingItem[field.name] = '';
+															editingItem[field.name] = '';
 														} else {
 															passwordLocked = true;
-															if (editingItem) editingItem[field.name] = null;
+															editingItem[field.name] = null;
 														}
 													}}
 												>
@@ -929,18 +1062,13 @@
 												</button>
 											{/if}
 										</div>
-
 									{:else}
 										<input
 											id={`${getConfig().key}-${field.name}`}
 											class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
 											type={field.type === 'number' ? 'number' : 'text'}
 											value={editingItem[field.name] ?? ''}
-											oninput={(e) =>
-												updateField(
-													field,
-													(e.target as HTMLInputElement).value
-												)}
+											oninput={(e) => updateField(field, (e.target as HTMLInputElement).value)}
 											readonly={field.readOnly}
 										/>
 									{/if}
@@ -949,12 +1077,49 @@
 						{/if}
 					{/each}
 
+					{#if activeEntity === 'anime'}
+						<div class="pt-2 space-y-2">
+							<div class="flex flex-col gap-2">
+								<button
+									type="button"
+									class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10 text-left"
+									onclick={openGenresDrawer}
+								>
+									Жанры:
+									<span class="text-white/80 font-semibold">
+										{getSelectedGenreIds().length}
+									</span>
+								</button>
+
+								<button
+									type="button"
+									class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10 text-left"
+									onclick={openTitlesDrawer}
+								>
+									Названия:
+									<span class="text-white/80 font-semibold">
+										{getTitleDrafts().filter((t) => String(t.name ?? '').trim().length > 0).length}
+									</span>
+								</button>
+
+								{#if getSelectedGenreIds().length > 0}
+									<div class="text-[12px] text-white/60">
+										{#each getSelectedGenreIds().slice(0, 6) as gid, i}
+											<span class="inline-flex items-center px-2 py-1 mr-1 mb-1 rounded-full bg-white/5 border border-white/10">
+												{getGenreName(gid)}
+											</span>
+										{/each}
+										{#if getSelectedGenreIds().length > 6}
+											<span class="text-white/50">и ещё {getSelectedGenreIds().length - 6}</span>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
 					<div class="flex flex-wrap items-center gap-3 pt-2">
-						<button
-							type="submit"
-							class="btn-custom disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={saving}
-						>
+						<button type="submit" class="btn-custom disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
 							{saving ? 'Сохранение...' : 'Сохранить'}
 						</button>
 						<button
@@ -963,6 +1128,8 @@
 							onclick={() => {
 								editingItem = null;
 								isNew = false;
+								genreDrawerOpen = false;
+								titlesDrawerOpen = false;
 							}}
 							disabled={saving}
 						>
@@ -981,17 +1148,140 @@
 					</div>
 				</form>
 			{:else}
-				<div
-					class="h-full flex flex-col items-center justify-center text-center text-white/60 px-4"
-				>
-					<p class="text-sm mb-3">
-						Выберите объект из списка слева или создайте новый.
-					</p>
-					<button class="btn-custom text-sm" onclick={openNew}>
-						Добавить {getConfig().label.toLowerCase()}
-					</button>
+				<div class="h-full flex flex-col items-center justify-center text-center text-white/60 px-4">
+					<p class="text-sm mb-3">Выберите объект из списка слева или создайте новый.</p>
+					<button class="btn-custom text-sm" onclick={openNew}>Добавить {getConfig().label.toLowerCase()}</button>
 				</div>
 			{/if}
 		</section>
 	</div>
 </div>
+
+{#if activeEntity === 'anime' && editingItem}
+	<div class={`fixed inset-0 z-[70] ${genreDrawerOpen ? '' : 'pointer-events-none'}`}>
+		<div
+			class={`absolute inset-0 bg-black/60 transition-opacity ${genreDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
+			onclick={closeGenresDrawer}
+		></div>
+
+		<div
+			class={`absolute right-0 top-0 h-full w-[420px] max-w-[92vw] bg-[#0e0b17] border-l border-white/10 shadow-2xl transition-transform ${
+				genreDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+			}`}
+		>
+			<div class="p-4 border-b border-white/10 flex items-center gap-2">
+				<div class="flex-1">
+					<div class="text-sm font-semibold">Жанры</div>
+					<div class="text-[12px] text-white/60">
+						Выбрано: {getSelectedGenreIds().length}
+					</div>
+				</div>
+				<button class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10" onclick={closeGenresDrawer}>
+					Закрыть
+				</button>
+			</div>
+
+			<div class="p-4 space-y-3">
+				<input
+					class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+					placeholder="Поиск жанра..."
+					value={genreSearch}
+					oninput={(e) => (genreSearch = (e.target as HTMLInputElement).value)}
+				/>
+
+				{#if genreListLoading}
+					<div class="text-sm text-white/60">Загрузка жанров...</div>
+				{:else}
+					<div class="max-h-[70vh] overflow-auto pr-1 space-y-1">
+						{#each allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.trim().toLowerCase())) as g (g.gid)}
+							<label class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/5 cursor-pointer">
+								<input
+									type="checkbox"
+									class="rounded border-white/30 bg-[#14101e] text-fuchsia-500 focus:ring-fuchsia-500/60"
+									checked={getSelectedGenreIds().includes(g.gid)}
+									onchange={() => toggleGenre(g.gid)}
+								/>
+								<span class="text-sm text-white/85">{g.name}</span>
+								<span class="ml-auto text-[10px] text-white/35">{g.gid.slice(0, 8)}</span>
+							</label>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<div class={`fixed inset-0 z-[70] ${titlesDrawerOpen ? '' : 'pointer-events-none'}`}>
+		<div
+			class={`absolute inset-0 bg-black/60 transition-opacity ${titlesDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
+			onclick={closeTitlesDrawer}
+		></div>
+
+		<div
+			class={`absolute right-0 top-0 h-full w-[520px] max-w-[95vw] bg-[#0e0b17] border-l border-white/10 shadow-2xl transition-transform ${
+				titlesDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+			}`}
+		>
+			<div class="p-4 border-b border-white/10 flex items-center gap-2">
+				<div class="flex-1">
+					<div class="text-sm font-semibold">Названия (AnimeTitle)</div>
+					<div class="text-[12px] text-white/60">
+						Здесь можно добавить новое или изменить существующее
+					</div>
+				</div>
+				<button class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs hover:bg-white/10" onclick={closeTitlesDrawer}>
+					Закрыть
+				</button>
+			</div>
+
+			<div class="p-4 space-y-3">
+				<button
+					type="button"
+					class="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm hover:bg-white/10"
+					onclick={addTitleRow}
+				>
+					+ Добавить название
+				</button>
+
+				<div class="max-h-[72vh] overflow-auto pr-1 space-y-2">
+					{#each getTitleDrafts() as t, idx (t.gid ?? `${t.language}-${idx}`)}
+						<div class="rounded-2xl border border-white/10 bg-black/20 p-3 space-y-2">
+							<div class="flex items-center gap-2">
+								<select
+									class="w-40 bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+									value={t.language}
+									onchange={(e) => updateTitleField(idx, 'language', (e.target as HTMLSelectElement).value)}
+								>
+									{#each languageOptions as opt}
+										<option value={opt.value}>{opt.label}</option>
+									{/each}
+								</select>
+
+								<button
+									type="button"
+									class="ml-auto px-3 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-xs font-semibold"
+									onclick={() => removeTitleRow(idx)}
+								>
+									Удалить
+								</button>
+							</div>
+
+							<input
+								class="w-full bg-[#14101e] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+								placeholder="Название..."
+								value={t.name}
+								oninput={(e) => updateTitleField(idx, 'name', (e.target as HTMLInputElement).value)}
+							/>
+
+							{#if t.gid}
+								<div class="text-[11px] text-white/45">gid: {t.gid}</div>
+							{:else}
+								<div class="text-[11px] text-white/45">новая запись (gid будет создан на бэке)</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
