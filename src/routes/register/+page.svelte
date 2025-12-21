@@ -102,7 +102,7 @@
 			body.set('password', password);
 			body.set('cf_token', turnstileToken!);
 
-			const res = await fetch(PUBLIC_API_URL + '/api/v2/auth/signup', {
+			const res = await fetch(PUBLIC_API_URL + '/v2/auth/signup', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 				body

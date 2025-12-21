@@ -71,7 +71,7 @@
 		if (!token) return;
 
 		try {
-			const res = await fetch(`${PUBLIC_API_URL}/api/v2/watcher/anime/${animeGid}`, {
+			const res = await fetch(`${PUBLIC_API_URL}/v2/watcher/anime/${animeGid}`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
 					accept: 'application/json'

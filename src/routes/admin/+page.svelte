@@ -101,10 +101,10 @@
 			key: 'anime',
 			label: 'Аниме',
 			endpoints: {
-				list: '/api/v2/anime/list',
-				create: '/api/v2/anime/create',
-				update: '/api/v2/anime/{gid}',
-				delete: '/api/v2/anime/{gid}'
+				list: '/v2/anime/list',
+				create: '/v2/anime/',
+				update: '/v2/anime/{gid}',
+				delete: '/v2/anime/{gid}'
 			},
 			primaryField: 'title',
 			columns: [
@@ -148,10 +148,10 @@
 			key: 'genre',
 			label: 'Жанры',
 			endpoints: {
-				list: '/api/v2/anime/genre/list',
-				create: '/api/v2/anime/genre/list',
-				update: '/api/v2/anime/genre/list/{gid}',
-				delete: '/api/v2/anime/genre/list/{gid}'
+				list: '/v2/anime/genre/list',
+				create: '/v2/anime/genre',
+				update: '/v2/anime/genre/{gid}',
+				delete: '/v2/anime/genre/{gid}'
 			},
 			primaryField: 'name',
 			columns: [{ key: 'gid', label: 'GID' }],
@@ -168,10 +168,10 @@
 			key: 'anime_title',
 			label: 'Названия',
 			endpoints: {
-				list: '/api/v2/anime/title/list',
-				create: '/api/v2/anime/title',
-				update: '/api/v2/anime/title/{gid}',
-				delete: '/api/v2/anime/title/{gid}'
+				list: '/v2/anime/title/list',
+				create: '/v2/anime/title',
+				update: '/v2/anime/title/{gid}',
+				delete: '/v2/anime/title/{gid}'
 			},
 			primaryField: 'name',
 			columns: [
@@ -197,10 +197,10 @@
 			key: 'watcher',
 			label: 'История просмотров',
 			endpoints: {
-				list: '/api/v2/watcher/list',
-				create: '/api/v2/watcher/',
-				update: '/api/v2/watcher/{gid}',
-				delete: '/api/v2/watcher/{gid}'
+				list: '/v2/watcher/list',
+				create: '/v2/watcher/',
+				update: '/v2/watcher/{gid}',
+				delete: '/v2/watcher/{gid}'
 			},
 			primaryField: 'anime_gid',
 			columns: [
@@ -230,10 +230,10 @@
 			key: 'account',
 			label: 'Аккаунты',
 			endpoints: {
-				list: '/api/v2/account/list',
-				create: '/api/v2/account',
-				update: '/api/v2/account/{gid}',
-				delete: '/api/v2/account/{gid}'
+				list: '/v2/account/list',
+				create: '/v2/account',
+				update: '/v2/account/{gid}',
+				delete: '/v2/account/{gid}'
 			},
 			primaryField: 'username',
 			columns: [
@@ -282,10 +282,10 @@
 			key: 'anime_video',
 			label: 'Видео',
 			endpoints: {
-				list: '/api/v2/video/list',
-				create: '/api/v2/video/',
-				update: '/api/v2/video/{gid}',
-				delete: '/api/v2/video/{gid}'
+				list: '/v2/video/list',
+				create: '/v2/video/',
+				update: '/v2/video/{gid}',
+				delete: '/v2/video/{gid}'
 			},
 			primaryField: 'anime_gid',
 			columns: [

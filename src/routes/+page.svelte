@@ -37,7 +37,7 @@
 		params.set('page_size', String(pageSize));
 		if (query.trim()) params.set('text', query.trim());
 
-		const response = await fetch(PUBLIC_API_URL + `/api/v2/anime/search?${params.toString()}`);
+		const response = await fetch(PUBLIC_API_URL + `/v2/anime/search?${params.toString()}`);
 		const json = await response.json();
 
 		animes = (json.result ?? []).map((item: any) => ({

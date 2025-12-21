@@ -32,7 +32,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 	params.set('page_size', String(pageSize));
 	if (text) params.set('text', text);
 
-	const response = await fetch(`${PRIVATE_API_URL}/api/v2/anime/search?${params.toString()}`);
+	const response = await fetch(`${PRIVATE_API_URL}/v2/anime/search?${params.toString()}`);
 
 	const json = (await response.json()) as ApiResponse;
 
