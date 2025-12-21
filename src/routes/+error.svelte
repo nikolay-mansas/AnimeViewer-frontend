@@ -193,15 +193,15 @@
 				</div>
 
 				<div class="p-4 sm:p-6 flex flex-col gap-4">
-					<p class="text-[11px] uppercase tracking-[0.25em] text-purple-300/70">
+					<!-- <p class="text-[11px] uppercase tracking-[0.25em] text-purple-300/70">
 						{#if status === 404}
-							аниме не найдено
+							страница не найдена
 						{:else if status === 500}
 							сбой сервера
 						{:else}
 							системная ошибка
 						{/if}
-					</p>
+					</p> -->
 
 					<h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
 						{displayTitle}
@@ -233,9 +233,9 @@
 			<div class="absolute -inset-px pointer-events-none border border-purple-500/10 rounded-2xl"></div>
 		</article>
 
-		<p class="text-xs sm:text-sm text-white/40 text-center max-w-lg">
+		<!-- <p class="text-xs sm:text-sm text-white/40 text-center max-w-lg">
 			Если вы попали сюда из закладок, проверьте, что аниме всё ещё доступно на сайте.
-		</p>
+		</p> -->
 	</div>
 </div>
 
