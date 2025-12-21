@@ -26,7 +26,14 @@
 	const img = $derived.by(() =>
 		image ? (image.startsWith('http') ? image : `${origin}${image}`) : undefined
 	);
-	const ldList = $derived.by(() => (Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : []));
+
+	const ldList = $derived.by(() =>
+		Array.isArray(jsonLd)
+			? jsonLd.map((x) => JSON.stringify(x))
+			: jsonLd
+				? [JSON.stringify(jsonLd)]
+				: []
+	);
 </script>
 
 <svelte:head>
@@ -59,8 +66,6 @@
 	{/if}
 
 	{#each ldList as ld}
-		<script type="application/ld+json">
-{JSON.stringify(ld)}
-		</script>
+		{@html `<script type="application/ld+json">${ld}</script>`}
 	{/each}
 </svelte:head>

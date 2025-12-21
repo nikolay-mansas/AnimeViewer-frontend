@@ -14,26 +14,18 @@
 	let widgetId = $state<string | null>(null);
 	let token = $state<string | null>(null);
 
-	declare global {
-		interface Window {
-			turnstile?: {
-				render: (el: HTMLElement, options: Record<string, unknown>) => string;
-				reset: (id?: string) => void;
-				remove: (id: string) => void;
-			};
-		}
+	function setToken(next: string | null) {
+		token = next;
+		onToken?.(next);
 	}
 
 	let scriptPromise: Promise<void> | null = null;
 
 	function loadScript(): Promise<void> {
 		if (!browser) return Promise.resolve();
-
-		// один раз на всё приложение
 		if (scriptPromise) return scriptPromise;
 
 		scriptPromise = new Promise<void>((resolve, reject) => {
-			// если уже есть — просто резолвим
 			const existing = document.querySelector<HTMLScriptElement>('script[data-turnstile="true"]');
 			if (existing) {
 				resolve();
@@ -55,18 +47,12 @@
 		return scriptPromise;
 	}
 
-	function setToken(next: string | null) {
-		token = next;
-		onToken?.(next);
-	}
-
-	// публичный метод (можно вызвать через bind:this)
 	export function reset() {
 		setToken(null);
-		if (browser && window.turnstile) {
-			// reset без id сбрасывает последний (но надёжнее с id)
-			if (widgetId) window.turnstile.reset(widgetId);
-			else window.turnstile.reset();
+		const api = window.turnstile;
+		if (browser && api) {
+			if (widgetId) api.reset(widgetId);
+			else api.reset();
 		}
 	}
 
@@ -80,14 +66,12 @@
 			await loadScript();
 			if (destroyed) return;
 
-			if (!window.turnstile) {
-				throw new Error('Turnstile API не доступен после загрузки скрипта');
-			}
+			const api = window.turnstile;
+			if (!api) throw new Error('Turnstile API не доступен после загрузки скрипта');
 
-			// очистим контейнер перед render (на всякий)
 			container.innerHTML = '';
 
-			const id = window.turnstile.render(container, {
+			const id = api.render(container, {
 				sitekey: siteKey,
 				theme,
 				size,
@@ -98,15 +82,13 @@
 
 			widgetId = id;
 		})().catch(() => {
-			// если хочешь — пробрось отдельный onError, сейчас просто сбрасываем токен
 			setToken(null);
 		});
 
 		return () => {
 			destroyed = true;
-			if (browser && window.turnstile && widgetId) {
-				window.turnstile.remove(widgetId);
-			}
+			const api = window.turnstile;
+			if (browser && api && widgetId) api.remove(widgetId);
 			widgetId = null;
 			setToken(null);
 		};

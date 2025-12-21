@@ -359,7 +359,9 @@
 		if (netDownlink == null || netDownlink <= 0) return;
 		if (quality !== 'auto') return;
 
-		let candidates = qualities.filter((q) => netDownlink >= minMbpsForLevel(q));
+		const downlink = netDownlink;
+
+		let candidates = qualities.filter((q) => downlink >= minMbpsForLevel(q));
 
 		console.log(candidates);
 
@@ -546,6 +548,7 @@
 
 	onMount(() => {
 		if (!videoEl) return;
+		const v = videoEl;
 
 		initHls();
 
@@ -555,18 +558,18 @@
 			startWatchTimer();
 		}
 
-		videoEl.volume = volume;
-		videoEl.muted = muted;
+		v.volume = volume;
+		v.muted = muted;
 
-		videoEl.addEventListener('loadedmetadata', () => {
-			duration = videoEl?.duration || 0;
+		v.addEventListener('loadedmetadata', () => {
+			duration = v?.duration || 0;
 
-			if (resumeFrom != null && videoEl) {
-				const d = videoEl.duration || 0;
+			if (resumeFrom != null && v) {
+				const d = v.duration || 0;
 				const target = d && resumeFrom > 0 && resumeFrom < d - 1 ? resumeFrom : resumeFrom;
 
 				try {
-					videoEl.currentTime = target;
+					v.currentTime = target;
 					current = target;
 				} catch {}
 
@@ -574,42 +577,42 @@
 			}
 		});
 
-		videoEl.addEventListener('timeupdate', () => {
-			current = videoEl?.currentTime || 0;
-			const b = videoEl?.buffered;
+		v.addEventListener('timeupdate', () => {
+			current = v?.currentTime || 0;
+			const b = v?.buffered;
 			if (b && b.length > 0) buffered = b.end(b.length - 1);
 
-			if (videoEl && videoEl.readyState >= 3) {
+			if (v && v.readyState >= 3) {
 				isBuffering = false;
 			}
 		});
 
-		videoEl.addEventListener('play', () => {
+		v.addEventListener('play', () => {
 			playing = true;
 			isBuffering = false;
 		});
-		videoEl.addEventListener('pause', () => {
+		v.addEventListener('pause', () => {
 			playing = false;
 			isBuffering = false;
 		});
 
-		videoEl.addEventListener('waiting', () => {
+		v.addEventListener('waiting', () => {
 			if (!isScrubbing) isBuffering = true;
 		});
-		videoEl.addEventListener('canplay', () => (isBuffering = false));
-		videoEl.addEventListener('canplaythrough', () => (isBuffering = false));
-		videoEl.addEventListener('seeking', () => {
+		v.addEventListener('canplay', () => (isBuffering = false));
+		v.addEventListener('canplaythrough', () => (isBuffering = false));
+		v.addEventListener('seeking', () => {
 			if (!isScrubbing) isBuffering = true;
 		});
-		videoEl.addEventListener('seeked', () => {
-			if (videoEl.readyState >= 2) {
+		v.addEventListener('seeked', () => {
+			if (v.readyState >= 2) {
 				isBuffering = false;
 			}
 		});
-		videoEl.addEventListener('stalled', () => {
+		v.addEventListener('stalled', () => {
 			if (!isScrubbing) isBuffering = true;
 		});
-		videoEl.addEventListener('error', () => {
+		v.addEventListener('error', () => {
 			isBuffering = false;
 			if (!errorMessage) {
 				errorMessage = 'Ошибка загрузки видео.';
@@ -646,15 +649,12 @@
 				}
 
 				if (key === 'ArrowRight' || key === 'ArrowLeft') {
-					if (!videoEl || !isFinite(videoEl.duration)) return;
+					if (!v || !isFinite(v.duration)) return;
 					event.preventDefault();
 
 					const delta = key === 'ArrowRight' ? 10 : -10;
-					const next = Math.max(
-						0,
-						Math.min(videoEl.duration || Infinity, (videoEl.currentTime || 0) + delta)
-					);
-					videoEl.currentTime = next;
+					const next = Math.max(0, Math.min(v.duration || Infinity, (v.currentTime || 0) + delta));
+					v.currentTime = next;
 
 					const side = key === 'ArrowRight' ? 'right' : 'left';
 					showSeekIndicator(side);
@@ -703,9 +703,11 @@
 
 	onDestroy(() => {
 		hls?.destroy();
-		removeFullscreenListener?.();
-		removeActivityListeners?.();
-		removeConnectionListener?.();
+
+		if (removeFullscreenListener) removeFullscreenListener();
+		if (removeActivityListeners) removeActivityListeners();
+		if (removeConnectionListener) removeConnectionListener();
+
 		if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
 		if (singleTapTimeout) clearTimeout(singleTapTimeout);
 		if (seekTimeout) clearTimeout(seekTimeout);

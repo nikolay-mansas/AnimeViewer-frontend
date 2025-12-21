@@ -10,6 +10,10 @@
 
 	const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
+	interface TurnstileComponent {
+		reset?: () => void;
+	}
+
 	let username = $state('');
 	let password = $state('');
 	let loading = $state(false);
@@ -17,7 +21,7 @@
 	let submitted = $state(false);
 
 	let turnstileToken = $state<string | null>(null);
-	let turnstileRef = $state<InstanceType<typeof Turnstile> | null>(null);
+	let turnstileRef = $state<TurnstileComponent | null>(null);
 
 	function getUsernameError(value: string): string | null {
 		const v = value.trim();

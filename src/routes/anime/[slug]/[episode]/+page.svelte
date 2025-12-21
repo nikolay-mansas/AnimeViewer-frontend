@@ -43,7 +43,7 @@
 	title={pageTitle}
 	description={pageDesc}
 	type="video.episode"
-	canonical={canonical}
+	{canonical}
 	noindex={true}
 	jsonLd={ld}
 />

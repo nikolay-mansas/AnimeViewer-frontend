@@ -11,6 +11,10 @@
 	const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 	const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+	interface TurnstileComponent {
+		reset?: () => void;
+	}
+
 	let email = $state('');
 	let username = $state('');
 	let password = $state('');
@@ -20,7 +24,7 @@
 	let submitted = $state(false);
 
 	let turnstileToken = $state<string | null>(null);
-	let turnstileRef = $state<InstanceType<typeof Turnstile> | null>(null);
+	let turnstileRef = $state<TurnstileComponent | null>(null);
 
 	function getEmailError(value: string): string | null {
 		const v = value.trim();

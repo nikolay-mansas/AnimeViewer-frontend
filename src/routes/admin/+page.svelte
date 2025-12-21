@@ -872,9 +872,9 @@
 						{/if}
 					</div>
 
-					{#if getConfig().filters && getConfig().filters.length > 0}
+					{#if (getConfig().filters ?? []).length > 0}
 						<div class="flex flex-wrap gap-2 text-[11px]">
-							{#each getConfig().filters as filter}
+							{#each getConfig().filters ?? [] as filter}
 								<label class="flex items-center gap-1 text-white/70">
 									<span>{filter.label}:</span>
 									<select
@@ -1077,10 +1077,10 @@
 													onclick={() => {
 														if (passwordLocked) {
 															passwordLocked = false;
-															editingItem[field.name] = '';
+															updateField(field, '');
 														} else {
 															passwordLocked = true;
-															editingItem[field.name] = null;
+															updateField(field, null);
 														}
 													}}
 												>
@@ -1195,10 +1195,12 @@
 
 {#if activeEntity === 'anime' && editingItem}
 	<div class={`fixed inset-0 z-[70] ${genreDrawerOpen ? '' : 'pointer-events-none'}`}>
-		<div
+		<button
+			type="button"
+			aria-label="Закрыть список жанров"
 			class={`absolute inset-0 bg-black/60 transition-opacity ${genreDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
 			onclick={closeGenresDrawer}
-		></div>
+		></button>
 
 		<div
 			class={`absolute top-0 right-0 h-full w-[420px] max-w-[92vw] border-l border-white/10 bg-[#0e0b17] shadow-2xl transition-transform ${
@@ -1255,10 +1257,12 @@
 	</div>
 
 	<div class={`fixed inset-0 z-[70] ${titlesDrawerOpen ? '' : 'pointer-events-none'}`}>
-		<div
+		<button
+			type="button"
+			aria-label="Закрыть список названий"
 			class={`absolute inset-0 bg-black/60 transition-opacity ${titlesDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
 			onclick={closeTitlesDrawer}
-		></div>
+		></button>
 
 		<div
 			class={`absolute top-0 right-0 h-full w-[520px] max-w-[95vw] border-l border-white/10 bg-[#0e0b17] shadow-2xl transition-transform ${
