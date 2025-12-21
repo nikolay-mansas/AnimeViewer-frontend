@@ -35,7 +35,7 @@ type EpisodesWatched = Record<number, { progress: number; viewed: boolean }>;
 export const load: PageServerLoad = async ({ params, fetch }) => {
 	const slug = params.slug;
 
-	const animeRes = await fetch(`${PRIVATE_API_URL}/api/v2/anime/?u=${encodeURIComponent(slug)}`);
+	const animeRes = await fetch(`${PRIVATE_API_URL}/v2/anime/?u=${encodeURIComponent(slug)}`);
 
 	if (!animeRes.ok) {
 		if (animeRes.status === 404) {

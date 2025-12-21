@@ -52,7 +52,7 @@ type SitemapFileInfo = {
 	lastmod?: string;
 };
 
-const API_URL = 'http://127.0.0.1:7999/api/v2/anime/search';
+const API_URL = 'https://animeviewer.ru/v2/anime/search';
 const PAGE_SIZE = 36;
 const SITE_URL = 'https://animeviewer.ru';
 const OUTPUT_DIR = path.resolve(process.cwd(), '..', 'static');

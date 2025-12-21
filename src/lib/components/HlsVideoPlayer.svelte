@@ -167,7 +167,7 @@
 		try {
 			const url =
 				PUBLIC_API_URL +
-				`/api/v2/watcher/?anime_gid=${encodeURIComponent(
+				`/v2/watcher/?anime_gid=${encodeURIComponent(
 					animeGid
 				)}&series=${encodeURIComponent(String(series))}`;
 
@@ -285,7 +285,7 @@
 
 		try {
 			if (!watcherGid) {
-				const res = await fetch(PUBLIC_API_URL + '/api/v2/watcher/', {
+				const res = await fetch(PUBLIC_API_URL + '/v2/watcher/', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -314,7 +314,7 @@
 				const data = await res.json();
 				watcherGid = data.gid ?? watcherGid;
 			} else {
-				const res = await fetch(PUBLIC_API_URL + `/api/v2/watcher/${watcherGid}`, {
+				const res = await fetch(PUBLIC_API_URL + `/v2/watcher/${watcherGid}`, {
 					method: 'PUT',
 					headers: {
 						'Content-Type': 'application/json',
