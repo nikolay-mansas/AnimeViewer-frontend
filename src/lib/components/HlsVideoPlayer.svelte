@@ -21,9 +21,21 @@
 	const SPEED_MAX = SPEED_STEPS[SPEED_STEPS.length - 1];
 	const SPEED_STEP = SPEED_STEPS.length > 1 ? SPEED_STEPS[1] - SPEED_STEPS[0] : 0.25;
 
+	function posterFromMaster(masterUrl: string) {
+		try {
+			const u = new URL(masterUrl, typeof window !== 'undefined' ? window.location.href : undefined);
+			u.pathname = u.pathname.replace(/\/[^/]*$/, '/preview.webp');
+			u.search = '';
+			u.hash = '';
+			return u.toString();
+		} catch {
+			return masterUrl.replace(/\/[^/?#]*$/, '/preview.webp').split('?')[0].split('#')[0];
+		}
+	}
+
 	let {
 		src = DEFAULT_SRC,
-		poster = DEFAULT_POSTER,
+		poster,
 		autoHideMs = 5000,
 		opening_start = null,
 		opening_end = null,
@@ -102,6 +114,8 @@
 	let watchInterval: ReturnType<typeof setInterval> | null = null;
 
 	let resumeFrom = $state<number | null>(null);
+
+	let computedPoster = $derived(poster ?? posterFromMaster(src));
 
 	const currentQualityLabel = $derived.by(() => {
 		if (!qualities.length) {
@@ -909,7 +923,7 @@
 </script>
 
 <div bind:this={playerEl} class="player relative h-full w-full overflow-hidden rounded-lg bg-black">
-	<video bind:this={videoEl} playsinline {poster} class="video h-full w-full object-cover">
+	<video bind:this={videoEl} playsinline preload="metadata" poster={computedPoster} class="video h-full w-full object-cover">
 		<track kind="captions" label="No captions" srclang="en" src="data:," />
 	</video>
 
