@@ -169,6 +169,24 @@
 		!initialOverlay && ((isBuffering && !isScrubbing) || errorMessage)
 	);
 
+	async function lockLandscape() {
+		const o = (screen as any)?.orientation;
+		if (o && typeof o.lock === 'function') {
+			try {
+				await o.lock('landscape');
+			} catch {}
+		}
+	}
+
+	function unlockOrientation() {
+		const o = (screen as any)?.orientation;
+		if (o && typeof o.unlock === 'function') {
+			try {
+				o.unlock();
+			} catch {}
+		}
+	}
+
 	async function loadWatcherProgress() {
 		if (!animeGid || !Number.isFinite(series)) return;
 
@@ -640,7 +658,14 @@
 				} else {
 					isFullscreen = document.fullscreenElement === playerEl;
 				}
+
+				if (isFullscreen) {
+					lockLandscape();
+				} else {
+					unlockOrientation();
+				}
 			};
+
 			document.addEventListener('fullscreenchange', fullscreenHandler);
 
 			const keyHandler = (event: KeyboardEvent) => {
@@ -879,9 +904,11 @@
 		if (document.fullscreenElement === playerEl) {
 			await document.exitFullscreen();
 			isFullscreen = false;
+			unlockOrientation();
 		} else {
 			await playerEl.requestFullscreen();
 			isFullscreen = true;
+			await lockLandscape();
 		}
 	}
 
@@ -923,8 +950,8 @@
 </script>
 
 <div bind:this={playerEl} class="player relative h-full w-full overflow-hidden rounded-lg bg-black">
-	<video bind:this={videoEl} playsinline preload="metadata" poster={computedPoster} class="video h-full w-full object-cover">
-		<track kind="captions" label="No captions" srclang="en" src="data:," />
+	<video bind:this={videoEl} playsinline preload="metadata" poster={computedPoster} class="video h-full w-full object-contain">
+		<track kind="captions" label="No captions" srclang="ru" src="data:," />
 	</video>
 
 	<button
@@ -1186,6 +1213,13 @@
 		position: relative;
 		width: 100%;
 		height: 100%;
+	}
+
+	.video {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		object-position: center;
 	}
 
 	.controls {
