@@ -1,7 +1,6 @@
 <script lang="ts">
 	import '../app.css';
 	import { goto } from '$app/navigation';
-	import favicon from '$lib/assets/favicon.svg';
 	import AuthNotice from '$lib/components/AuthNotice.svelte';
 	import { auth } from '$lib/stores/auth';
 
@@ -20,7 +19,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<meta name="application-name" content="AnimeViewer" />
 </svelte:head>
 
