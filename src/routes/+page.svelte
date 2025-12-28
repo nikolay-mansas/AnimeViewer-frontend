@@ -8,6 +8,20 @@
 
 	import { PUBLIC_API_URL } from '$env/static/public';
 
+	const IMAGE_BASE = 'https://s3.animeviewer.ru';
+	const PREVIEW_WIDTH = 336;
+	const PREVIEW_QUALITY = 60;
+	const IMG_OPTS = `${PREVIEW_WIDTH}x,q${PREVIEW_QUALITY}`;
+
+	function makeImgUrl(previewPath: string): string {
+		const url = new URL(previewPath, IMAGE_BASE);
+		const parts = url.pathname.split('/');
+		if (parts.length < 4) return previewPath;
+		const id = parts[2];
+		const file = parts[3];
+		return `${IMAGE_BASE}/api/${IMG_OPTS}/${id}/${file}`;
+	}
+
 	let { data } = $props();
 	const {
 		animes: initialAnimes,
@@ -19,7 +33,7 @@
 
 	let animes = $state(
 		initialAnimes.map((item: any) => ({
-			id: item.gid,
+			id: item.id,
 			title: item.title,
 			episodes: item.episodes,
 			img: item.img,
@@ -44,7 +58,7 @@
 			id: item.gid,
 			title: item.title,
 			episodes: `0/${item.number_episodes}`,
-			img: item.preview_path,
+			img: makeImgUrl(item.preview_path),
 			href: `/anime/${item.url}`
 		}));
 

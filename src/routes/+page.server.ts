@@ -22,6 +22,20 @@ type Anime = {
 	href: string;
 };
 
+const IMAGE_BASE = 'https://s3.animeviewer.ru';
+const PREVIEW_WIDTH = 336;
+const PREVIEW_QUALITY = 60;
+const IMG_OPTS = `${PREVIEW_WIDTH}x,q${PREVIEW_QUALITY}`;
+
+function makeImgUrl(previewPath: string): string {
+	const url = new URL(previewPath, IMAGE_BASE);
+	const parts = url.pathname.split('/');
+	if (parts.length < 4) return previewPath;
+	const id = parts[2];
+	const file = parts[3];
+	return `${IMAGE_BASE}/api/${IMG_OPTS}/${id}/${file}`;
+}
+
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const pageSize = Number(url.searchParams.get('page_size') ?? '12');
@@ -40,7 +54,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 		id: item.gid,
 		title: item.title,
 		episodes: `0/${item.number_episodes}`,
-		img: item.preview_path.replace(/\.jpe?g$/i, '.webp'),
+		img: makeImgUrl(item.preview_path),
 		href: item.url
 	}));
 
