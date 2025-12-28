@@ -37,7 +37,8 @@
 			title: item.title,
 			episodes: item.episodes,
 			img: item.img,
-			href: `/anime/${item.href}`
+			href: `/anime/${item.href}`,
+			priority: item.priority
 		}))
 	);
 
@@ -54,12 +55,13 @@
 		const response = await fetch(PUBLIC_API_URL + `/v2/anime/search?${params.toString()}`);
 		const json = await response.json();
 
-		animes = (json.result ?? []).map((item: any) => ({
+		animes = (json.result ?? []).map((item: any, index: number) => ({
 			id: item.gid,
 			title: item.title,
 			episodes: `0/${item.number_episodes}`,
 			img: makeImgUrl(item.preview_path),
-			href: `/anime/${item.url}`
+			href: `/anime/${item.url}`,
+			priority: index < 4
 		}));
 
 		total = json.total;

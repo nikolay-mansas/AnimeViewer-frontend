@@ -20,6 +20,7 @@ type Anime = {
 	episodes: string;
 	img: string;
 	href: string;
+	priority: boolean;
 };
 
 const IMAGE_BASE = 'https://s3.animeviewer.ru';
@@ -32,7 +33,11 @@ function makeImgUrl(previewPath: string): string {
 	const parts = url.pathname.split('/');
 	if (parts.length < 4) return previewPath;
 	const id = parts[2];
-	const file = parts[3];
+	let file = parts[3];
+
+	const dot = file.lastIndexOf('.');
+	if (dot !== -1) file = file.slice(0, dot) + '.webp';
+
 	return `${IMAGE_BASE}/api/${IMG_OPTS}/${id}/${file}`;
 }
 
@@ -50,12 +55,13 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 
 	const json = (await response.json()) as ApiResponse;
 
-	const animes: Anime[] = (json.result ?? []).map((item) => ({
+	const animes: Anime[] = (json.result ?? []).map((item, index) => ({
 		id: item.gid,
 		title: item.title,
 		episodes: `0/${item.number_episodes}`,
 		img: makeImgUrl(item.preview_path),
-		href: item.url
+		href: item.url,
+		priority: index < 4
 	}));
 
 	return {
