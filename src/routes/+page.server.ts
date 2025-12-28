@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 		id: item.gid,
 		title: item.title,
 		episodes: `0/${item.number_episodes}`,
-		img: item.preview_path,
+		img: item.preview_path.replace(/\.jpe?g$/i, '.webp'),
 		href: item.url
 	}));
 
