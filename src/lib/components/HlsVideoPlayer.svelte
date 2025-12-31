@@ -156,7 +156,6 @@
 
 	const showSkipOpening = $derived(
 		opening_start != null &&
-			opening_start > 0 &&
 			current >= opening_start &&
 			current < opening_start + 15
 	);
@@ -913,7 +912,7 @@
 	}
 
 	function skipOpening() {
-		if (!videoEl || opening_start == null || !(opening_start > 0)) return;
+		if (!videoEl || opening_start == null || opening_end == null) return;
 		videoEl.currentTime = opening_end;
 	}
 
