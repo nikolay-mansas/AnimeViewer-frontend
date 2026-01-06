@@ -117,6 +117,8 @@
 
 	let computedPoster = $derived(poster ?? posterFromMaster(src));
 
+	const QUALITY_STORAGE_KEY = `player:quality`;
+
 	const currentQualityLabel = $derived.by(() => {
 		if (!qualities.length) {
 			return quality === 'auto' ? 'Auto' : String(quality);
@@ -167,6 +169,18 @@
 	const showLoadingOverlay = $derived(
 		!initialOverlay && ((isBuffering && !isScrubbing) || errorMessage)
 	);
+
+	function loadSavedQuality() {
+		if (typeof localStorage === 'undefined') return;
+		const v = localStorage.getItem(QUALITY_STORAGE_KEY);
+		if (v === null) return;
+		if (v === 'auto') {
+			quality = 'auto';
+		} else {
+			const n = Number(v);
+			if (!Number.isNaN(n)) quality = n;
+		}
+	}
 
 	async function lockLandscape() {
 		const o = (screen as any)?.orientation;
@@ -439,9 +453,15 @@
 					height: l.height
 				}));
 
-				quality = 'auto';
-				currentQualityIndex = null;
-				lastAutoCap = null;
+				if (quality === 'auto') {
+					hls.currentLevel = -1;
+					currentQualityIndex = null;
+					lastAutoCap = null;
+					applyInitialQualityCap();
+				} else {
+					hls.currentLevel = quality;
+					currentQualityIndex = quality;
+				}
 
 				applyInitialQualityCap();
 			});
@@ -580,6 +600,8 @@
 	onMount(() => {
 		if (!videoEl) return;
 		const v = videoEl;
+
+		loadSavedQuality();
 
 		initHls();
 
@@ -856,12 +878,18 @@
 			currentQualityIndex = null;
 			lastAutoCap = null;
 			updateQualityByNetwork();
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem(QUALITY_STORAGE_KEY, 'auto');
+			}
 		} else {
 			const idx = Number(v);
 			if (Number.isNaN(idx)) return;
 			quality = idx;
 			hls.currentLevel = idx;
 			currentQualityIndex = idx;
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem(QUALITY_STORAGE_KEY, String(idx));
+			}
 		}
 	}
 
@@ -1160,6 +1188,7 @@
 					</div>
 
 					<select
+						value={quality}
 						onchange={(e) => changeQuality((e.target as HTMLSelectElement).value)}
 						class="quality-select"
 						aria-label="Video quality"
