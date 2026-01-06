@@ -60,6 +60,7 @@
 			opening_start={data.opening_start}
 			opening_end={data.opening_end}
 			end={data.end}
+			isLastSeries={data.episode === data.episodesTotal}
 		/>
 	{/key}
 </div>

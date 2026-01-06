@@ -13,6 +13,7 @@
 		opening_start?: number | null;
 		opening_end?: number | null;
 		end?: number | null;
+		isLastSeries: boolean;
 	}
 
 	let {
@@ -25,7 +26,8 @@
 		poster,
 		opening_start = null,
 		opening_end = null,
-		end = null
+		end = null,
+		isLastSeries
 	}: Props = $props();
 
 	let prevUrl = $derived.by(() => (episode > 1 ? `${basePath}/${episode - 1}` : null));
@@ -68,6 +70,7 @@
 			{opening_end}
 			{end}
 			onNext={goNextFromPlayer}
+			{isLastSeries}
 		/>
 	</div>
 

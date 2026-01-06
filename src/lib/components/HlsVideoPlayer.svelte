@@ -42,7 +42,8 @@
 		end = null,
 		onNext = undefined,
 		animeGid,
-		series
+		series,
+		isLastSeries
 	} = $props<{
 		src?: string;
 		poster?: string;
@@ -53,6 +54,7 @@
 		onNext?: () => void;
 		animeGid: string;
 		series: number;
+		isLastSeries: boolean;
 	}>();
 
 	let playerEl: HTMLDivElement | null = null;
@@ -117,6 +119,8 @@
 
 	let computedPoster = $derived(poster ?? posterFromMaster(src));
 
+	let viewedSent = false;
+
 	const QUALITY_STORAGE_KEY = `player:quality`;
 
 	const currentQualityLabel = $derived.by(() => {
@@ -161,7 +165,14 @@
 			current >= opening_start &&
 			current < opening_start + 15
 	);
-	const showNextButton = $derived(end != null && end > 0 && current >= end && current < end + 15);
+
+	const showNextButton = $derived(
+		!isLastSeries &&
+		end != null &&
+		end > 0 &&
+		current >= end &&
+		current < end + 15
+	);
 
 	const progressPercent = $derived(!duration ? 0 : Math.min(100, (current / duration) * 100));
 	const bufferPercent = $derived(!duration ? 0 : Math.min(100, (buffered / duration) * 100));
@@ -299,10 +310,12 @@
 		const total = videoEl.duration || 0;
 		const percentage = total > 0 ? Math.round((timecode / total) * 100) : 0;
 
-		const viewedBoundary =
-			end && end > 0 ? end - 10 : videoEl.duration ? videoEl.duration - 10 : Infinity;
-
-		const viewed = timecode >= viewedBoundary;
+		const viewed =
+			end != null && end > 0
+				? timecode >= end
+				: total
+					? timecode >= total - 10
+					: false;
 
 		return {
 			timecode,
@@ -797,6 +810,16 @@
 		controlsVisible = true;
 		scheduleHideControls();
 	}
+
+	$effect(() => {
+		if (viewedSent) return;
+		if (!watchEnabled) return;
+		if (end == null || end <= 0) return;
+		if (current < end) return;
+
+		viewedSent = true;
+		checkWatcherTick();
+	});
 
 	$effect(() => {
 		if (!initialOverlay && playing) {
