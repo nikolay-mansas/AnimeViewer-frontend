@@ -4,6 +4,7 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
+	import { PUBLIC_CLOUDFLARE_ENABLE } from '$env/static/public';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
@@ -13,6 +14,8 @@
 	interface TurnstileComponent {
 		reset?: () => void;
 	}
+
+	const cloudflareEnabled = PUBLIC_CLOUDFLARE_ENABLE === 'true';
 
 	let username = $state('');
 	let password = $state('');
@@ -45,7 +48,10 @@
 	const passwordError = $derived(password === '' && !submitted ? null : getPasswordError(password));
 
 	const canSubmit = $derived(
-		!loading && !!turnstileToken && !getUsernameError(username) && !getPasswordError(password)
+		!loading && 
+		(cloudflareEnabled ? !!turnstileToken : true) && 
+		!getUsernameError(username) && 
+		!getPasswordError(password)
 	);
 
 	$effect(() => {
@@ -70,7 +76,10 @@
 			body.set('username', cleanUsername);
 			body.set('password', password);
 			body.set('grant_type', 'password');
-			body.set('cf_token', turnstileToken!);
+
+			if (cloudflareEnabled && turnstileToken) {
+				body.set('cf_token', turnstileToken);
+			}
 
 			const res = await fetch(PUBLIC_API_URL + '/v2/auth/signin', {
 				method: 'POST',
@@ -101,8 +110,10 @@
 					message = 'Неверный логин или пароль.';
 				}
 
-				turnstileRef?.reset?.();
-				turnstileToken = null;
+				if (cloudflareEnabled) {
+					turnstileRef?.reset?.();
+					turnstileToken = null;
+				}
 
 				throw new Error(message);
 			}
@@ -167,18 +178,20 @@
 				{/if}
 			</div>
 
-			<div class="flex justify-center pt-2">
-				<div class="w-fit">
-					<Turnstile
-						bind:this={turnstileRef}
-						siteKey={PUBLIC_TURNSTILE_SITE_KEY}
-						onToken={(t) => (turnstileToken = t)}
-						theme="auto"
-					/>
+			{#if cloudflareEnabled}
+				<div class="flex justify-center pt-2">
+					<div class="w-fit">
+						<Turnstile
+							bind:this={turnstileRef}
+							siteKey={PUBLIC_TURNSTILE_SITE_KEY}
+							onToken={(t) => (turnstileToken = t)}
+							theme="auto"
+						/>
+					</div>
 				</div>
-			</div>
+			{/if}
 
-			{#if submitted && !turnstileToken}
+			{#if cloudflareEnabled && submitted && !turnstileToken}
 				<p class="mt-2 text-center text-xs text-red-300">Подтвердите, что вы не бот.</p>
 			{/if}
 
