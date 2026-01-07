@@ -122,6 +122,7 @@
 	let viewedSent = false;
 
 	const QUALITY_STORAGE_KEY = `player:quality`;
+	const VOICE_STORAGE_KEY = `player:voice:${animeGid}`;
 
 	const currentQualityLabel = $derived.by(() => {
 		if (!qualities.length) {
@@ -181,15 +182,27 @@
 		!initialOverlay && ((isBuffering && !isScrubbing) || errorMessage)
 	);
 
-	function loadSavedQuality() {
+	function loadSavedSettings() {
 		if (typeof localStorage === 'undefined') return;
-		const v = localStorage.getItem(QUALITY_STORAGE_KEY);
-		if (v === null) return;
-		if (v === 'auto') {
+
+		const qualityValue = localStorage.getItem(QUALITY_STORAGE_KEY);
+		if (qualityValue === null) return;
+		if (qualityValue === 'auto') {
 			quality = 'auto';
 		} else {
-			const n = Number(v);
+			const n = Number(qualityValue);
 			if (!Number.isNaN(n)) quality = n;
+		}
+
+		const audioTrackValue = localStorage.getItem(VOICE_STORAGE_KEY);
+		if (audioTrackValue !== null) {
+			const trackIndex = Number(audioTrackValue);
+			if (!Number.isNaN(trackIndex)) {
+				audioTrack = trackIndex;
+				if (hls && (hls as any).audioTrack !== undefined) {
+					(hls as any).audioTrack = trackIndex;
+				}
+			}
 		}
 	}
 
@@ -494,8 +507,20 @@
 					label: t.name || t.lang || `Дорожка ${i + 1}`
 				}));
 
-				if (typeof (hls as any).audioTrack === 'number') {
-					audioTrack = (hls as any).audioTrack;
+				let savedTrackIndex: number | null = null;
+				if (typeof localStorage !== 'undefined') {
+					const saved = localStorage.getItem(VOICE_STORAGE_KEY);
+					if (saved !== null) {
+						const idx = Number(saved);
+						if (!Number.isNaN(idx) && idx >= 0 && idx < audioTracks.length) {
+							savedTrackIndex = idx;
+						}
+					}
+				}
+
+				if (savedTrackIndex !== null) {
+					audioTrack = savedTrackIndex;
+					(hls as any).audioTrack = savedTrackIndex;
 				} else {
 					audioTrack = 0;
 					(hls as any).audioTrack = 0;
@@ -614,7 +639,7 @@
 		if (!videoEl) return;
 		const v = videoEl;
 
-		loadSavedQuality();
+		loadSavedSettings();
 
 		initHls();
 
@@ -840,6 +865,12 @@
 		videoEl.muted = muted || volume === 0;
 	});
 
+	$effect(() => {
+		if (hls && audioTracks.length > 0) {
+			loadSavedSettings();
+		}
+	});
+
 	function toggle() {
 		if (!videoEl) return;
 		if (videoEl.paused) {
@@ -922,6 +953,10 @@
 		if (Number.isNaN(idx)) return;
 		audioTrack = idx;
 		(hls as any).audioTrack = idx;
+
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(VOICE_STORAGE_KEY, String(idx));
+		}
 	}
 
 	function t(sec: number) {
